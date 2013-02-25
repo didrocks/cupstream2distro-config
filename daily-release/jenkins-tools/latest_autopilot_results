@@ -1,0 +1,32 @@
+#!/bin/sh
+
+if [ $# -lt 2 ]; then
+   cat>&2 <<EOF
+usage: $(basename $0) jobname card_brand
+Returns the path to the junit result file of latest build of autopilot
+
+example:
+  \$ $(basename $0) ps-unity-autopilot-release-testing intel
+EOF
+
+    exit 1
+fi
+
+BASEDIR=/var/lib/jenkins/jobs
+SEARCHPATH=${BASEDIR}/${1}/configurations/axis-label/autopilot-${2}/builds/
+RESULTFILE=junitResult.xml
+if [ ! -d "$SEARCHPATH" ]; then
+    echo "Result directory doesn't exists, exiting!">&2
+    exit 2
+fi
+
+LATEST=$(find $SEARCHPATH -maxdepth 1 -type d|sort|tail -1)
+
+RESULTPATH="$LATEST/$RESULTFILE"
+
+if [ ! -f "$RESULTPATH" ]; then
+    echo "result file '$RESULTFILE' does not exist.">&2
+    exit 3
+fi
+
+echo $RESULTPATH

@@ -1,0 +1,68 @@
+#!/usr/bin/python
+# -*- coding: UTF8 -*-
+# Copyright (C) 2012 Canonical
+#
+# Authors:
+#  Didier Roche
+#
+# This program is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation; version 3.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+
+import argparse
+import logging
+import yaml
+import subprocess
+import sys
+
+
+if __name__ == '__main__':
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(message)s"
+        )
+
+    parser = argparse.ArgumentParser(description="Hackish and quick script to file all current seeded binary packages from a stack")
+    parser.add_argument('stack_file', help='File of the stack to show binary packages')
+    args = parser.parse_args()
+
+    cfg = yaml.load(file(args.stack_file, 'r'))
+    if not 'stack' in cfg or not 'projects' in cfg['stack']:
+        logging.error("Stack file invalid. Aborting!")
+        sys.exit(1)
+
+    # we only consider default installed packages, not tools (doesn't apply to the "misc" stack). Hence the hackish in the description for now.
+    binaries = set()
+    for source in cfg['stack']['projects']:
+        instance = subprocess.Popen(["apt-cache", "showsrc", source], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (stdout, stderr) = instance.communicate()
+        if instance.returncode != 0:
+            raise Exception(stderr.decode("utf-8").strip())
+
+        for line in stdout.splitlines():
+            if not line.startswith('Binary: '):
+                continue
+
+            candidates_packages = line.split('Binary: ')[-1].split(', ')
+            for bin_package in candidates_packages:
+                instance = subprocess.Popen(["apt-cache", "show", bin_package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                (bin_stdout, stderr) = instance.communicate()
+                if instance.returncode != 0:
+                    raise Exception(stderr.decode("utf-8").strip())
+
+                for bin_line in bin_stdout.splitlines():
+                    # add a space to ensure we don't map edubuntu-desktop
+                    if bin_line.startswith('Task: ') and ' ubuntu-desktop' in bin_line:
+                        binaries.add(bin_package)
+
+    print(" ".join(binaries))

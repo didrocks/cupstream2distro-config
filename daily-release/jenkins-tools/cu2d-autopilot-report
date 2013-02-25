@@ -1,0 +1,295 @@
+#! /usr/bin/python
+""" Calculate autopilot pass rate
+"""
+# Copyright (C) 2012, Canonical Ltd (http://www.canonical.com/)
+#
+# Author: Jean-Baptiste Lallement <jean-baptiste.lallement@canonical.com>
+#
+# This software is free software: you can redistribute it
+# and/or modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation, either version 3 of
+# the License, or (at your option) any later version.
+#
+# This software is distributed in the hope that it will
+# be useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+# of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this software.  If not, see <http://www.gnu.org/licenses/>.
+
+import os
+import logging
+import sys
+import argparse
+import xml.etree.ElementTree as etree
+import ConfigParser
+import glob
+import hashlib
+from datetime import datetime
+from shutil import copyfile
+
+BINDIR = os.path.dirname(__file__)
+DEFAULT_LOGNAME = 'autopilot_result'
+DEFAULT_CFG = {
+    'history': '/tmp/cu2d-logs',
+    'failure': '5%',
+    'regression': '0.1%',
+    'skip': '3%',
+    'removal': '0'
+}
+
+EFAILURE = 1 << 1
+EREGRESS = 1 << 2
+ESKIP = 1 << 3
+EREMOVAL = 1 << 4
+
+
+def parselog(path):
+    """ Parse a JUnit log file and return the number of tests, and a list of
+    failed tests
+
+    :param path: path to an XML log file
+    :return: (test count, [failed tests])
+    """
+    logging.debug('Parsing file: %s', path)
+
+    if not os.path.exists(path):
+        logging.error('File doesn\'t exists: %s', path)
+        sys.exit(1)
+
+    tree = etree.parse(path)
+    root = tree.getroot()
+
+    cases = root.findall('suites/suite/cases/case')
+
+    testcount = 0
+    skipcount = 0
+    failed = []
+    testcount = len(cases)
+
+    for case in cases:
+        skipped = case.find('skipped')
+        classname = case.find('className')
+        testname = case.find('testName')
+
+        if 'true' in skipped:
+            skipcount += 1
+
+        stacktrace = case.find('errorStackTrace')
+        if stacktrace is not None:
+            failed.append(classname.text + "::" + testname.text)
+
+    logging.debug("Test failures:\n\t{}".format("\n\t".join(failed)))
+    logging.debug("%d tests failed", (len(failed)))
+    return (testcount, skipcount, failed)
+
+
+def set_logging(debugmode=False):
+    """Initialize logging"""
+    logging.basicConfig(
+        level=logging.DEBUG if debugmode else logging.INFO,
+        format="%(asctime)s %(levelname)s %(message)s"
+        )
+    logging.debug('Debug mode enabled')
+
+
+def load_config(path):
+    '''Load configuration file
+
+    :param path: path to configuration file
+    '''
+    config = ConfigParser.SafeConfigParser()
+    if path:
+        logging.debug('Loading configuration from %s', path)
+        path = os.path.expanduser(path)
+        if not os.path.exists(path):
+            logging.error('Configuration file doesn\'t exists: %s', path)
+            sys.exit(1)
+        config.read(path)
+
+    cfg = {}
+    for k, v in DEFAULT_CFG.iteritems():
+        try:
+            logging.debug('Loading option %s', k)
+            cfg[k] = config.get('DEFAULT', k, raw=True)
+        except ConfigParser.NoOptionError:
+            logging.debug('option not found')
+            cfg[k] = v
+
+    logging.debug('Configuration loaded:\n%s', cfg)
+    return cfg
+
+
+def md5sum(filename):
+    ''' Calculate md5 checksum of filename '''
+    md5 = hashlib.md5()
+    with open(filename, 'rb') as f:
+        for chunk in iter(lambda: f.read(128 * md5.block_size), b''):
+            md5.update(chunk)
+    return md5.hexdigest()
+
+
+def archive_log(histdir, lognew):
+    ''' Copy logfile to histdir if not already archived '''
+
+    histdir = os.path.abspath(os.path.expanduser(histdir))
+    if not os.path.exists(histdir):
+        os.makedirs(histdir)
+    elif not os.path.isdir(histdir):
+        logging.error('\'%s\' exists and is not a directory. Aborting!',
+                      histdir)
+
+    filelist = glob.glob(os.path.join(histdir, '*'))
+    filelist.sort()
+
+    md5_new = md5sum(lognew)
+    logprev = None
+
+    try:
+        logprev = filelist[-1]
+        md5_prev = md5sum(logprev)
+        if md5_prev == md5_new:
+            # Log already there
+            logging.debug(
+                'File already exist in archive. Reusing existing file.')
+            if len(filelist) > 1:
+                # More than 1 file in history and file already there just
+                # return
+                logging.debug('Files found: %s', filelist[-2:])
+                return(filelist[-2:])
+            else:
+                return(None, filelist[-1])
+    except IndexError:
+        # Nothing in history
+        pass
+
+    destpath = os.path.join(histdir, DEFAULT_LOGNAME + '.' +
+                            datetime.now().strftime('%Y%m%d-%H%M%S.%f') +
+                            '.xml')
+    logging.debug('Copying %s -> %s', lognew, destpath)
+    copyfile(lognew, destpath)
+    return(logprev, lognew)
+
+
+def goal_reached(target, total, count):
+    ''' Check if value is below target.
+
+    :param target: Value must be below target to succeed. Can be a percentage
+    of total or an absolute value
+    :param total: Max value
+    :param count: Current value
+    '''
+    if target[-1] == '%':
+        goal = float(target[:-1]) * total / 100
+    else:
+        goal = float(target)
+
+    logging.debug('Goal: %f / Count: %f', goal, count)
+    return(count <= goal)
+
+
+def compute_stat(cfg, new, old):
+    ''' Calculate stats for latest and previous results, compare to the goal
+    and exit with non-zero if goal is not reached
+
+    :param cfg: Configration
+    :param new: new results
+    :param old: Previous results
+    '''
+    ret = 0
+
+    logging.debug('Calculating stats with:')
+    dtotal = new['total'] - old['total']
+    dskip = new['skip'] - old['skip']
+    dfail = len(new['fail']) - len(old['fail'])
+
+    trun = new['total'] - new['skip']
+    toldrun = old['total'] - old['skip']
+    pfail = float(len(new['fail'])) / trun
+    pregr = float(dfail) / trun
+    try:
+        ptotal = float(dtotal) / toldrun
+    except ZeroDivisionError:
+        ptotal = 1
+    pskip = float(new['skip']) / trun
+
+    sys.stdout.write('count\t{:d}\t{:d}\t{:d}\n'.format(
+        new['total'], new['skip'], len(new['fail'])))
+    sys.stdout.write('delta\t{:+d}\t{:+d}\t{:+d}\n'.format(
+        dtotal, dskip, dfail))
+    sys.stdout.write('ratio\t{:+.3f}\t{:+.3f}\t{:+.3f}\t{:+.3f}\n'.format(
+        ptotal, pskip, pfail, pregr))
+    sys.stdout.flush()
+
+    # Result analysis
+    if not goal_reached(cfg['failure'], trun, len(new['fail'])):
+        ret += EFAILURE
+    if not goal_reached(cfg['regression'], trun, dfail):
+        ret += EREGRESS
+    if not goal_reached(cfg['skip'], trun, new['skip']):
+        ret += ESKIP
+    if not goal_reached(cfg['removal'], toldrun, -dtotal):
+        ret += EREMOVAL
+
+    return ret
+
+
+def main():
+    ''' Main routine '''
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawTextHelpFormatter,
+        description='''
+        Calculate autopilot pass rate and regression rate.
+
+        3 lines of results are displayed: absolute count, difference with
+        previous run and percentage. The output is:
+
+        Absolute values        count   [total]    [skip]    [fail]
+        Delta with prev. run   delta   [+/-total] [+/-skip] [+/-fail]
+        Percentage             ratio   [%total]   [%skip]   [%fail]   [%reg]
+        ''')
+    parser.add_argument('-A', '--no-archive', action='store_true',
+                        default=False,
+                        help='Do not process archived log file')
+    parser.add_argument('-C', '--config',
+                        help='Path to configuration file')
+    parser.add_argument('-d', '--debug', action='store_true', default=False,
+                        help='enable debug mode')
+    parser.add_argument('logfile', help='autopilot result file in Junit '
+                        'format')
+
+    args = parser.parse_args()
+    set_logging(args.debug)
+    config = load_config(args.config)
+
+    if not os.path.exists(args.logfile):
+        logging.error('File doesn\'t exists: %s', args.logfile)
+        sys.exit(1)
+
+    prevlog = currlog = None
+    if not args.no_archive:
+        (prevlog, currlog) = archive_log(config['history'], args.logfile)
+    else:
+        currlog = args.logfile
+
+    nresult = {
+        'total': 0,
+        'skip': 0,
+        'fail': []
+    }
+
+    logging.debug('Parsing latest log file')
+    (nresult['total'], nresult['skip'], nresult['fail']) = parselog(currlog)
+    presult = dict(nresult)
+    if prevlog:
+        logging.debug('Parsing previous log file')
+        (presult['total'], presult['skip'], presult['fail']) = parselog(
+            prevlog)
+
+    ret = compute_stat(config, nresult, presult)
+    sys.exit(ret)
+
+
+if __name__ == "__main__":
+    main()

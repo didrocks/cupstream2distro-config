@@ -1,0 +1,142 @@
+#!/usr/bin/python
+"""
+Reports global status for a stack
+"""
+#
+# Copyright (C) 2012, Canonical Ltd (http://www.canonical.com/)
+#
+# This file is part of ubuntu-server-iso-testing.
+#
+# ubuntu-server-iso-testing is free software: you can redistribute it
+# and/or modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation, version 3 of
+# the License.
+#
+# ubuntu-server-iso-testing is distributed in the hope that it will
+# be useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+# of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with ubuntu-server-iso-testing.  If not, see
+# <http://www.gnu.org/licenses/>.
+#
+
+import logging
+import argparse
+import os
+import xml.etree.ElementTree as etree
+import sys
+
+
+class CU2DStackStatus(object):
+    ''' This class search the latest results and each step and report the global
+    result of the master job
+    '''
+
+    def __init__(self):
+        ''' Constructor '''
+        self.args = self.__parse_args()
+
+        self.stack = self.args.stack
+        self.release = self.args.release
+
+        self.jenkinsdir = '/var/lib/jenkins'
+        self.jobs = ('1.0prepare', '2.1build', '2.2check', '3.0publish')
+        self.statuses = ('NA', 'SUCCESS', 'UNSTABLE', 'ABORTED', 'FAILURE')
+        self.jobformat = 'cu2d-{}-{}-{}'
+        self.jobsdir = os.path.join(self.jenkinsdir, 'jobs')
+        self.job_name = os.getenv('JOB_NAME')
+        self.stack_status = -1
+
+        self.outputfile = os.path.join(self.jenkinsdir, 'cu2d/work',
+                                       '%s-%s' % (self.stack, self.release),
+                                       'stack.status')
+
+    def __parse_args(self):
+        ''' Argument parser '''
+        parser = argparse.ArgumentParser(description='Start a jenkins slave')
+        parser.add_argument('-d', '--debug', action='store_true',
+                            default=False, help='enable debug mode')
+        parser.add_argument('-s', '--stack',
+                            help='name of the stack')
+        parser.add_argument('-r', '--release',
+                            help='name of the release (default: head)')
+        args = parser.parse_args()
+        set_logging(args.debug)
+        logging.debug(args)
+        if not args.stack or not args.release:
+            logging.error('Stack and release parameters are mandatory')
+            sys.exit(1)
+        return args
+
+    def get_stack_status(self):
+        ''' Walk down the result tree to find the status for the stack
+        0: Pass
+        1: Failed
+        2: Unstable
+        '''
+        overall = 0
+        for job in self.jobs:
+            jobdir = self.jobformat.format(self.stack, self.release, job)
+            jobpath = os.path.join(self.jobsdir, jobdir)
+
+            buildnumber = 0
+            nextbuildpath = os.path.join(jobpath, 'nextBuildNumber')
+            try:
+                with open(nextbuildpath, 'r') as fnb:
+                    nextnum = fnb.read()
+                buildnumber = int(nextnum) - 1
+            except IOError:
+                logging.debug('error reading %s, ignoring!', nextbuildpath)
+                continue
+            logging.debug('%s : %s', jobpath, buildnumber)
+
+            buildxml = os.path.join(jobpath, 'builds', str(buildnumber),
+                                    'build.xml')
+            if not os.path.isfile(buildxml):
+                logging.debug('file does not exist %s, ignoring!', buildxml)
+
+            result = test_result(buildxml)
+            logging.debug('Step %s : %s', job, result)
+
+            overall = max(overall, self.statuses.index(result))
+        self.stack_status = self.statuses[overall]
+        return self.stack_status
+
+    def write_status(self):
+        ''' Write result to file stack_status '''
+        o_status = {'NA': '-1',
+                    'SUCCESS': '0',
+                    'UNSTABLE': '2',
+                    'ABORTED': '3',
+                    'FAILURE': '1'}
+        if not os.path.isdir(os.path.dirname(self.outputfile)):
+            logging.error('Output directory does not exist: %s, exiting!',
+                          os.path.dirname(self.outputfile))
+            sys.exit(1)
+
+        with open(self.outputfile, 'w') as fout:
+            fout.write(o_status[self.stack_status])
+
+
+def test_result(path):
+    '''Returns a build result'''
+
+    tree = etree.parse(path)
+    root = tree.getroot()
+    result = root.find('result')
+    return result.text
+
+
+def set_logging(debugmode=False):
+    """Initialize logging"""
+    logging.basicConfig(
+        level=logging.DEBUG if debugmode else logging.INFO,
+        format="%(asctime)s %(levelname)s %(message)s")
+    logging.debug('Debug mode enabled')
+
+if __name__ == '__main__':
+    cu2d = CU2DStackStatus()
+    status = cu2d.get_stack_status()
+    cu2d.write_status()
