@@ -1,0 +1,69 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>Prepare PPA for project {{ projectname }}</description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <scm class="hudson.scm.NullSCM"/>
+  <assignedNode>master</assignedNode>
+  <canRoam>false</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers class="vector"/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>#!/bin/bash -e
+export LANG=en_US.UTF-8
+
+# don't rebuild the stack
+if [ "$CHECK_WITH_WHOLE_PPA" = "true" ]; then
+    touch *xml
+    exit 0
+fi
+
+if [ -n "$REBUILD_ONLY" ]; then
+    DO_REBUILD=0
+    for prj in $REBUILD_ONLY; do
+        [ "$prj" = "{{ projectname }}" ] &amp;&amp; DO_REBUILD=1
+    done
+    if [ $DO_REBUILD -eq 0 ]; then
+        touch *xml
+        exit 0
+    fi
+fi
+
+# WS Clean-up
+rm -f *xml
+
+BINDIR=/var/lib/jenkins/cu2d/cupstream2distro
+WRKDIR=/var/lib/jenkins/cu2d/work/{{ stack }}-{{ release }}
+OPTS="{{ opts }}"
+
+cd $WRKDIR
+rm -Rf {{ projectname }}_* *_{{ projectname }}_* {{ projectname }} ubuntu/{{ projectname }} || true
+$BINDIR/prepare-package $OPTS
+RC=$?
+
+cp -a *_{{ projectname }}_*xml $WORKSPACE/</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <hudson.tasks.ArtifactArchiver>
+      <artifacts>*xml</artifacts>
+      <latestOnly>false</latestOnly>
+    </hudson.tasks.ArtifactArchiver>
+    <hudson.tasks.junit.JUnitResultArchiver>
+      <testResults>*.xml</testResults>
+      <keepLongStdio>false</keepLongStdio>
+      <testDataPublishers/>
+    </hudson.tasks.junit.JUnitResultArchiver>
+    <hudson.plugins.build__publisher.BuildPublisher>
+      <publishUnstableBuilds>true</publishUnstableBuilds>
+      <publishFailedBuilds>true</publishFailedBuilds>
+      <postActions class="vector"/>
+    </hudson.plugins.build__publisher.BuildPublisher>
+  </publishers>
+  <buildWrappers/>
+</project>

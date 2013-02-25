@@ -1,0 +1,67 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>Publish to the archive</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.BooleanParameterDefinition>
+          <name>force</name>
+          <description></description>
+          <defaultValue>false</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <assignedNode>master</assignedNode>
+  <canRoam>false</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <authToken>Koh9xumayie3Eet8rooh4guniratae2b</authToken>
+  <triggers class="vector"/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>#!/bin/bash -eu
+# Cleanup workspace
+rm -f *
+
+export LANG=en_US.UTF-8
+BINDIR=/var/lib/jenkins/cu2d/cupstream2distro
+WRKDIR=/var/lib/jenkins/cu2d/work/{{ stack }}-{{ release }}
+OUTDIR=/var/lib/jenkins/cu2d/out/
+
+OPTS="{{ opts }}"
+[ "$force" = "true" ] &amp;&amp; OPTS="$OPTS -f"
+
+cd $WRKDIR
+$BINDIR/publisher $OPTS
+RC=$?
+
+cp *diff publisher.xml packagelist* $WORKSPACE/ 2&gt;/dev/null || true
+mkdir -p $OUTDIR
+mv packagelist_rsync_* $OUTDIR 2&gt;/dev/null || true
+</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <hudson.tasks.ArtifactArchiver>
+      <artifacts>*.diff,*xml,packagelist*</artifacts>
+      <latestOnly>false</latestOnly>
+    </hudson.tasks.ArtifactArchiver>
+    <hudson.tasks.junit.JUnitResultArchiver>
+      <testResults>*.xml</testResults>
+      <keepLongStdio>false</keepLongStdio>
+      <testDataPublishers/>
+    </hudson.tasks.junit.JUnitResultArchiver>
+    <hudson.plugins.build__publisher.BuildPublisher>
+      <publishUnstableBuilds>true</publishUnstableBuilds>
+      <publishFailedBuilds>true</publishFailedBuilds>
+      <postActions class="vector"/>
+    </hudson.plugins.build__publisher.BuildPublisher>
+  </publishers>
+  <buildWrappers/>
+</project>

@@ -1,0 +1,105 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>Run test on common architecture (i386)</description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <scm class="hudson.scm.NullSCM"/>
+  <assignedNode>master</assignedNode>
+  <canRoam>false</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers class="vector"/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>#!/bin/bash -eu
+export LANG=en_US.UTF-8
+BINDIR=/var/lib/jenkins/cu2d/cupstream2distro
+WRKDIR=/var/lib/jenkins/cu2d/work/{{ stack }}-{{ release }}
+OPTS="{{ opts }}"
+
+cd $WRKDIR
+
+echo "Removing skip file (initial cleaning)"
+rm -f /tmp/autopilot.{{ stack }}.skip
+if [ -z "$(ls $WRKDIR/*.project 2&gt;/dev/null)" -a "$CHECK_WITH_WHOLE_PPA" != "true" ]; then
+    echo "No new source uploaded to PPA and CHECK_WITH_WHOLE_PPA is not set.  Skipping check!"
+    echo "&lt;testsuite errors='0' failures='0' name='' tests='1' time='0.001'&gt;&lt;testcase classname='notest.skip' name='skipped' time='0.001'/&gt;&lt;/testsuite&gt;" &gt; /tmp/autopilot.{{ stack }}.skip
+    exit 0
+fi
+
+$BINDIR/watch-ppa $OPTS
+
+</command>
+    </hudson.tasks.Shell>
+    <hudson.plugins.parameterizedtrigger.TriggerBuilder>
+      <configs>
+        <hudson.plugins.parameterizedtrigger.BlockableBuildTriggerConfig>
+          <configs>
+            <hudson.plugins.parameterizedtrigger.CurrentBuildParameters/>
+          </configs>
+          <projects>{{ extracheck }}</projects>
+          <condition>ALWAYS</condition>
+          <triggerWithNoParameters>false</triggerWithNoParameters>
+          <block>
+            <buildStepFailureThreshold>
+              <name>FAILURE</name>
+              <ordinal>2</ordinal>
+              <color>RED</color>
+            </buildStepFailureThreshold>
+            <failureThreshold>
+              <name>FAILURE</name>
+              <ordinal>2</ordinal>
+              <color>RED</color>
+            </failureThreshold>
+          </block>
+          <buildAllNodesWithLabel>false</buildAllNodesWithLabel>
+        </hudson.plugins.parameterizedtrigger.BlockableBuildTriggerConfig>
+      </configs>
+    </hudson.plugins.parameterizedtrigger.TriggerBuilder>
+    <hudson.tasks.Shell>
+      <command>#!/bin/bash -u
+
+if [ -e /tmp/autopilot.{{ stack }}.skip ]; then
+    echo "Removing Skip file"
+    rm /tmp/autopilot.{{ stack }}.skip
+    exit 0
+fi
+
+BASEDIR=/var/lib/jenkins/cu2d
+BINDIR=$BASEDIR/cupstream2distro
+JOBROOT={{ extracheck }}
+
+for card in ati intel nvidia; do
+    echo &quot;Calculating results for card $card&quot;
+    JUNIT=$($BINDIR/jenkins/latest_autopilot_results $JOBROOT $card)
+    RET=$?
+
+    if [ $RET -gt 0 ]; then
+        echo &quot;Failed to find junit results for latest run, exiting!&quot;
+        exit $RET
+    fi
+
+    AUTOPILOTRC=$BASEDIR/default.autopilotrc
+    [ -e "$BASEDIR/{{ stack }}.autopilotrc" ] &amp;&amp; AUTOPILOTRC=$BASEDIR/{{ stack }}.autopilotrc
+    $BINDIR/jenkins/cu2d-autopilot-report -C $AUTOPILOTRC $JUNIT
+    RET=$?
+
+    if [ $RET -gt 0 ]; then
+        echo &quot;Tests for card &apos;$card&apos; failed!&quot;
+        exit $RET
+    fi
+done</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <hudson.plugins.build__publisher.BuildPublisher>
+      <publishUnstableBuilds>true</publishUnstableBuilds>
+      <publishFailedBuilds>true</publishFailedBuilds>
+      <postActions class="vector"/>
+    </hudson.plugins.build__publisher.BuildPublisher>
+  </publishers>
+  <buildWrappers/>
+</project>
