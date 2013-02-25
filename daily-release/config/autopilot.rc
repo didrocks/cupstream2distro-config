@@ -1,0 +1,10 @@
+; Configuration file for autopilot reporting
+; If values are not specified in this configuration file, default values will be
+; used.
+; Default values are configured in the script cu2d-autopilot-report
+[DEFAULT]
+history=~/cu2d/history
+failure=8%      ;Number or percentage (if % appended) of failures accepted
+regression=0    ;Number or percentage (if % appended) of regressions accepted
+skip=3%         ;Number or percentage (if % appended) of skipped accepted
+removal=0       ;Number or percentage (if % appended) of removals accepted
