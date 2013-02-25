@@ -1,0 +1,314 @@
+#! /usr/bin/python
+"""Create/Update jenkins jobs for a given stack
+
+- Reads stack configuration from YAML configuration file
+- Create/updates the jenkins jobs on the server configured in the credentials
+file
+
+"""
+# Copyright (C) 2012, Canonical Ltd (http://www.canonical.com/)
+#
+# Author: Jean-Baptiste Lallement <jean-baptiste.lallement@canonical.com>
+#
+# This software is free software: you can redistribute it
+# and/or modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation, either version 3 of
+# the License, or (at your option) any later version.
+#
+# This software is distributed in the hope that it will
+# be useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+# of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this software.  If not, see <http://www.gnu.org/licenses/>.
+
+import os
+import logging
+import sys
+import yaml
+import jinja2
+import jenkins
+import argparse
+import subprocess
+
+sys.path.append('..')  # add local cupstream2distro
+from cupstream2distro import launchpadmanager
+
+BINDIR = os.path.dirname(__file__)
+PREFIX = 'cu2d'
+TEMPLATES = {
+    'master': 'master-config.xml.tmpl',
+    'waitonstacks': 'waitonstacks-stack-config.xml.tmpl',
+    'prepare-master': 'prepare-config.xml.tmpl',
+    'prepare-project': 'prepare-project-config.xml.tmpl',
+    'build': 'build-stack-config.xml.tmpl',
+    'check': 'check-stack-config.xml.tmpl',
+    'publish': 'publish-stack-config.xml.tmpl'
+}
+DEFAULT_CREDENTIALS = os.path.expanduser('~/.cu2d.cred')
+
+
+def load_jenkins_credentials(path):
+    """ Load Credentials from credentials configuration file """
+    if not os.path.exists(path):
+        return False
+
+    logging.debug('Loading credentials from %s', path)
+    cred = yaml.load(file(path, 'r'))
+    return False if not 'jenkins' in cred else cred['jenkins']
+
+
+def load_stack_cfg(path):
+    """ Load stack configuration from file
+
+    TODO: Verify that mandatory settings are defined
+    """
+
+    if not os.path.exists(path):
+        return False
+
+    logging.debug('Loading stack configuration from %s', path)
+    cfg = yaml.load(file(path, 'r'))
+    return False if not 'stack' in cfg else cfg['stack']
+
+
+def setup_branch(stack):
+    """Configure the branch so that lp-propose target the wanted one
+
+    :param stack: dictionary with configuration of the stack
+    """
+
+    if stack['projects']:
+        lp = launchpadmanager.get_launchpad(use_cred_file=None)
+        for prj in stack['projects']:
+            if type(prj) == dict:
+                srcname = prj.keys()[0]
+                lpb = prj[srcname]
+            else:
+                lpb = "lp:{}".format(prj)
+
+            current_branch = lp.branches.getByUrl(url=lpb)
+            if not current_branch:
+                logging.error("No branch exist on launchpad for {}".format(lpb))
+                sys.exit(1)
+
+            # set the bzr config so that targeted branch is the right one when using the short name
+            logging.info("Set branch {} as target for {}".format(current_branch.unique_name, lpb))
+            cmd = ["bzr", "config", "-d", "lp:{}".format(current_branch.unique_name), "public_branch={}".format(lpb)]
+            if subprocess.call(cmd) != 0:
+                logging.error("Can't set the target branch {} for {}".format(current_branch.unique_name, lpb))
+                sys.exit(1)
+
+
+def setup_job(jkh, jjenv, jobname, tmplname, ctx, update=False):
+    """ Generate template and create or update jenkins job
+
+    :param jkh: jenkins handle
+    :param jjenv: handle to jinja environment
+    :param jobname: jenkins' job name
+    :param tmplname: template name
+    :param ctx: jinja context (dict) to merge with the template
+    :param update: update existing job if True
+    """
+    logging.debug('Generating job: %s', jobname)
+    tmpl = jjenv.get_template(tmplname)
+    jkcfg = tmpl.render(ctx)
+    if not jkh.job_exists(jobname):
+        logging.info("Creating Jenkins Job %s ", jobname)
+        jkh.create_job(jobname, jkcfg)
+    else:
+        if update:
+            logging.info("Reconfiguring Jenkins Job %s ", jobname)
+            jkh.reconfig_job(jobname, jkcfg)
+        else:
+            logging.debug('update set to %s. Skipping reconfiguration of '
+                          '%s', update, jobname)
+    return True
+
+
+def update_jenkins(jkcfg, stack, update=False):
+    """ Add/update jenkins jobs
+
+    :param jkcfg: dictionary with the credentials
+    :param stack: dictionary with configuration of the stack
+    :param update: Update existing jobs if true
+
+    :return: True on success
+    """
+    if not 'tmpldir' in stack:
+        tmpldir = os.path.join(BINDIR, 'templates')
+    else:
+        tmpldir = stack['tmpldir']
+
+    tmpldir = os.path.abspath(tmpldir)
+    logging.debug('Templates directory: %s', tmpldir)
+
+    if not os.path.exists(tmpldir):
+        logging.error('Template directory doesn\'t exist')
+        return False
+
+    if not jkcfg['url']:
+        logging.error("Please provide a URL to the jenkins instance.")
+        sys.exit(1)
+
+    jjenv = jinja2.Environment(loader=jinja2.FileSystemLoader(tmpldir))
+
+    if 'username' in jkcfg:
+        jkh = jenkins.Jenkins(jkcfg['url'],
+                                  username=jkcfg['username'],
+                                  password=jkcfg['password'])
+    else:
+        jkh = jenkins.Jenkins(jkcfg['url'])
+
+    basename = [PREFIX, stack['name'], stack['release']]
+    ctxbase = {
+        'stack': stack['name'],
+        'release': stack['release']
+    }
+    subjobs = {}
+
+    # wait that other stack are published if there are some stack dependencies
+    if 'dependencies' in stack:
+        jobname = "-".join(basename + ['0waitonstacks'])
+        subjobs['jobwaitonstacks'] = jobname
+        ctx = dict(ctxbase)
+        ctx['opts'] = ''
+        setup_job(jkh, jjenv, jobname, TEMPLATES['waitonstacks'],
+                  ctx, update)
+
+    # prepare by project
+    ctx = dict(ctxbase)
+    projects = []
+    if stack['projects']:
+        for prj in stack['projects']:
+            if type(prj) == dict:
+                srcname = prj.keys()[0]
+                lpb = prj[srcname]
+            else:
+                srcname = prj
+                lpb = ''
+            jobname = "-".join(basename + ['1.1prepare', srcname])
+            projects.append(jobname)
+            if not lpb:
+                lpb = "lp:%s" % srcname
+
+            ctx['opts'] = '-s %s -p %s -b %s -n %s' % (
+                stack['series'], stack['ppa'], lpb, srcname)
+            ctx['projectname'] = srcname
+            setup_job(jkh, jjenv, jobname, TEMPLATES['prepare-project'],
+                      ctx, update)
+
+    # Main prepare
+    jobname = "-".join(basename + ['1.0prepare'])
+    subjobs['jobprepare'] = jobname
+    ctx = dict(ctxbase)
+    ctx['projects'] = ','.join(projects)
+    setup_job(jkh, jjenv, jobname, TEMPLATES['prepare-master'],
+              ctx, update)
+
+    # build
+    jobname = "-".join(basename + ['2.1build'])
+    subjobs['jobbuild'] = jobname
+    ctx = dict(ctxbase)
+    ctx['opts'] = '-s %s -p %s' % (stack['series'], stack['ppa'])
+    setup_job(jkh, jjenv, jobname, TEMPLATES['build'],
+              ctx, update)
+
+    # check
+    if 'extracheck' in stack and stack['extracheck']:
+        jobname = "-".join(basename + ['2.2check'])
+        subjobs['jobbuild'] += ',' + jobname
+        ctx = dict(ctxbase)
+        ctx['opts'] = '-a -s %s -p %s' % (stack['series'], stack['ppa'])
+        ctx['extracheck'] = stack['extracheck']
+        setup_job(jkh, jjenv, jobname, TEMPLATES['check'],
+                  ctx, update)
+
+    # publish
+    jobname = "-".join(basename + ['3.0publish'])
+    subjobs['jobpublish'] = jobname
+    ctx = dict(ctxbase)
+    ctx['opts'] = '-s %s -p %s -j cu2d-%s-%s' % (stack['series'], stack['ppa'],
+                                        stack['name'], stack['release'])
+    setup_job(jkh, jjenv, jobname, TEMPLATES['publish'],
+              ctx, update)
+
+    # Master job
+    # Process at the end because it must know information about subjobs
+    jobname = "-".join(basename)
+    ctx = dict(ctxbase)
+    ctx.update(subjobs)
+    if 'schedule' in stack:
+        ctx['schedule'] = stack['schedule']
+    if 'dependencies' in stack:
+        ctx['dependencies'] = True
+    setup_job(jkh, jjenv, jobname, TEMPLATES['master'],
+              ctx, update)
+
+    return True
+
+
+def set_logging(debugmode=False):
+    """Initialize logging"""
+    logging.basicConfig(
+        level=logging.DEBUG if debugmode else logging.INFO,
+        format="%(asctime)s %(levelname)s %(message)s"
+        )
+    logging.debug('Debug mode enabled')
+
+
+def main():
+    ''' Main routine '''
+    parser = argparse.ArgumentParser(
+        description='Create/Update the configuration of the Jenkins jobs '
+            'for a stack.',
+        epilog = """Example:
+To update the indicator stack run the following command:
+    $ ./cu2d-update-stack -dU ./etc/indicators-head.cfg
+        """,
+        formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument('-C', '--credentials', metavar='CREDENTIALFILE',
+                        default=DEFAULT_CREDENTIALS,
+                        help='use Jenkins and load credentials from '
+                        'CREDENTIAL FILE\n(default: %s)' % DEFAULT_CREDENTIALS)
+    parser.add_argument('-U', '--update-jobs', action='store_true',
+                        default=False,
+                        help='by default only new jobs are added. This '
+                        'option enables \nupdate of existing jobs from '
+                        'configuration template.')
+    parser.add_argument('-S', '--no-setupbranch', action='store_true',
+                        default=False,
+                        help='Skip branch setup (useful if you do not have '
+                        'privileges to configure branchs but need to update '
+                        'job configuration. In this case, only update of '
+                        'existing jobs is allowed')
+    parser.add_argument('-d', '--debug', action='store_true', default=False,
+                        help='enable debug mode')
+    parser.add_argument('stackcfg', help='Path to a configuration file for '
+                        'the stack')
+
+    args = parser.parse_args()
+    set_logging(args.debug)
+
+    stackcfg = load_stack_cfg(args.stackcfg)
+    if not stackcfg:
+        logging.error('Stack configuration failed to load. Aborting!')
+
+    if not args.no_setupbranch:
+        setup_branch(stackcfg)
+
+    credentials = None
+    if args.credentials:
+        credentialsfile = args.credentials
+        credentials = load_jenkins_credentials(
+            os.path.expanduser(credentialsfile))
+        if not credentials:
+            logging.error('Credentials not found. Aborting!')
+            sys.exit(1)
+        if not update_jenkins(credentials, stackcfg, args.update_jobs):
+            logging.error('Failed to configure jenkins jobs. Aborting!')
+            sys.exit(2)
+
+if __name__ == "__main__":
+    main()
