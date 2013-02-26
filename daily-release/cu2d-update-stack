@@ -33,9 +33,9 @@ import argparse
 import subprocess
 
 sys.path.append('..')  # add local cupstream2distro
-from cupstream2distro import launchpadmanager
+from launchpadlib.launchpad import Launchpad
 
-BINDIR = os.path.dirname(__file__)
+BASEDIR = os.path.dirname(__file__)
 PREFIX = 'cu2d'
 TEMPLATES = {
     'master': 'master-config.xml.tmpl',
@@ -48,6 +48,13 @@ TEMPLATES = {
 }
 DEFAULT_CREDENTIALS = os.path.expanduser('~/.cu2d.cred')
 
+def dict_union(result_dict, other_dict):
+    for key, val in other_dict.iteritems():
+        if not isinstance(val, dict):
+            result_dict[key] = val
+        else:
+            subdict = result_dict.setdefault(key, {})
+            dict_union(subdict, val)
 
 def load_jenkins_credentials(path):
     """ Load Credentials from credentials configuration file """
@@ -58,9 +65,20 @@ def load_jenkins_credentials(path):
     cred = yaml.load(file(path, 'r'))
     return False if not 'jenkins' in cred else cred['jenkins']
 
+def load_default_cfg():
+    """ Load default stack configuration from the defaults.conf file"""
 
-def load_stack_cfg(path):
-    """ Load stack configuration from file
+    config_file = os.path.join(BASEDIR, "config", "defaults.conf")
+    if not os.path.isfile(config_file):
+        return False
+
+    logging.debug('Loading default stack configuration from %s', config_file)
+    cfg = yaml.load(file(config_file, 'r'))
+    return False if not cfg else cfg
+
+
+def load_stack_cfg(path, default_config):
+    """ Load stack configuration from file, extending default_config
 
     TODO: Verify that mandatory settings are defined
     """
@@ -70,8 +88,17 @@ def load_stack_cfg(path):
 
     logging.debug('Loading stack configuration from %s', path)
     cfg = yaml.load(file(path, 'r'))
-    return False if not 'stack' in cfg else cfg['stack']
+    if not 'stack' in cfg:
+        return False
 
+    dict_union(default_config, cfg)
+    return default_config['stack']
+
+def get_launchpad_branch(prj, source_name):
+    """Get the right a launchpad branch url from source_name if not overriden"""
+    if isinstance(prj, dict) and 'target_branch' in prj:
+        return prj['target_branch']
+    return "lp:{}".format(source_name)
 
 def setup_branch(stack):
     """Configure the branch so that lp-propose target the wanted one
@@ -80,13 +107,9 @@ def setup_branch(stack):
     """
 
     if stack['projects']:
-        lp = launchpadmanager.get_launchpad(use_cred_file=None)
-        for prj in stack['projects']:
-            if type(prj) == dict:
-                srcname = prj.keys()[0]
-                lpb = prj[srcname]
-            else:
-                lpb = "lp:{}".format(prj)
+        lp = Launchpad.login_with('cupstream2distro', 'production', allow_access_levels=["WRITE_PRIVATE"])
+        for src_name in stack['projects']:
+            lpb = get_launchpad_branch(stack['projects'][src_name], src_name)
 
             current_branch = lp.branches.getByUrl(url=lpb)
             if not current_branch:
@@ -137,7 +160,7 @@ def update_jenkins(jkcfg, stack, update=False):
     :return: True on success
     """
     if not 'tmpldir' in stack:
-        tmpldir = os.path.join(BINDIR, 'templates')
+        tmpldir = os.path.join(BASEDIR, 'jenkins-templates')
     else:
         tmpldir = stack['tmpldir']
 
@@ -162,9 +185,12 @@ def update_jenkins(jkcfg, stack, update=False):
         jkh = jenkins.Jenkins(jkcfg['url'])
 
     basename = [PREFIX, stack['name'], stack['release']]
+
     ctxbase = {
         'stack': stack['name'],
-        'release': stack['release']
+        'release': stack['release'],
+        'BINDIR': stack['BINDIR'],
+        'BASEDIR': stack['BASEDIR']
     }
     subjobs = {}
 
@@ -181,17 +207,11 @@ def update_jenkins(jkcfg, stack, update=False):
     ctx = dict(ctxbase)
     projects = []
     if stack['projects']:
-        for prj in stack['projects']:
-            if type(prj) == dict:
-                srcname = prj.keys()[0]
-                lpb = prj[srcname]
-            else:
-                srcname = prj
-                lpb = ''
+        for srcname in stack['projects']:
+            lpb = get_launchpad_branch(stack['projects'][srcname], srcname)
+
             jobname = "-".join(basename + ['1.1prepare', srcname])
             projects.append(jobname)
-            if not lpb:
-                lpb = "lp:%s" % srcname
 
             ctx['opts'] = '-s %s -p %s -b %s -n %s' % (
                 stack['series'], stack['ppa'], lpb, srcname)
@@ -265,7 +285,7 @@ def main():
             'for a stack.',
         epilog = """Example:
 To update the indicator stack run the following command:
-    $ ./cu2d-update-stack -dU ./etc/indicators-head.cfg
+    $ ./cu2d-update-stack -dU indicators-head.cfg
         """,
         formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('-C', '--credentials', metavar='CREDENTIALFILE',
@@ -291,7 +311,8 @@ To update the indicator stack run the following command:
     args = parser.parse_args()
     set_logging(args.debug)
 
-    stackcfg = load_stack_cfg(args.stackcfg)
+    default_config = load_default_cfg()
+    stackcfg = load_stack_cfg(args.stackcfg, default_config)
     if not stackcfg:
         logging.error('Stack configuration failed to load. Aborting!')
 
