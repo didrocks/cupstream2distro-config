@@ -17,8 +17,7 @@
       <command>#!/bin/bash -eu
 export LANG=en_US.UTF-8
 # Placeholder step
-BINDIR=/var/lib/jenkins/cu2d/cupstream2distro
-WRKDIR=/var/lib/jenkins/cu2d/work/{{ stack }}-{{ release }}
+WRKDIR={{ BASEDIR }}/work/{{ stack }}-{{ release }}
 cd $WRKDIR
 
 </command>

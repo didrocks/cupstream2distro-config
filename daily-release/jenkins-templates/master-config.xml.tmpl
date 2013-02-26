@@ -39,8 +39,7 @@
     <hudson.tasks.Shell>
       <command>#!/bin/bash -e
 export LANG=en_US.UTF-8
-BINDIR=/var/lib/jenkins/cu2d/cupstream2distro
-WRKDIR=/var/lib/jenkins/cu2d/work/{{ stack }}-{{ release }}
+WRKDIR={{ BASEDIR }}/work/{{ stack }}-{{ release }}
 BAKDIR=${WRKDIR}.bak
 
 if [ -z &quot;$REBUILD_ONLY&quot; -a "$CHECK_WITH_WHOLE_PPA" != "true" ]; then
@@ -190,7 +189,7 @@ cd $WRKDIR
           </logTexts>
           <EscalateStatus>false</EscalateStatus>
           <RunIfJobSuccessful>false</RunIfJobSuccessful>
-          <script>/var/lib/jenkins/cu2d/cupstream2distro/stack_status -s {{ stack }} -r {{ release }}</script>
+          <script>{{ BINDIR }}/stack_status -s {{ stack }} -r {{ release }}</script>
         </hudson.plugins.postbuildtask.TaskProperties>
       </tasks>
     </hudson.plugins.postbuildtask.PostbuildTask>

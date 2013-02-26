@@ -16,8 +16,7 @@
     <hudson.tasks.Shell>
       <command>#!/bin/bash -eu
 export LANG=en_US.UTF-8
-BINDIR=/var/lib/jenkins/cu2d/cupstream2distro
-WRKDIR=/var/lib/jenkins/cu2d/work/{{ stack }}-{{ release }}
+WRKDIR={{ BASEDIR }}/work/{{ stack }}-{{ release }}
 OPTS="{{ opts }}"
 
 cd $WRKDIR
@@ -30,7 +29,7 @@ if [ -z "$(ls $WRKDIR/*.project 2&gt;/dev/null)" -a "$CHECK_WITH_WHOLE_PPA" != "
     exit 0
 fi
 
-$BINDIR/watch-ppa $OPTS
+{{ BINDIR }}/watch-ppa $OPTS
 
 </command>
     </hudson.tasks.Shell>
@@ -68,13 +67,11 @@ if [ -e /tmp/autopilot.{{ stack }}.skip ]; then
     exit 0
 fi
 
-BASEDIR=/var/lib/jenkins/cu2d
-BINDIR=$BASEDIR/cupstream2distro
 JOBROOT={{ extracheck }}
 
 for card in ati intel nvidia; do
     echo &quot;Calculating results for card $card&quot;
-    JUNIT=$($BINDIR/latest_autopilot_results $JOBROOT $card)
+    JUNIT=$({{ BINDIR }}/latest_autopilot_results $JOBROOT $card)
     RET=$?
 
     if [ $RET -gt 0 ]; then
@@ -82,9 +79,9 @@ for card in ati intel nvidia; do
         exit $RET
     fi
 
-    AUTOPILOTRC=$BASEDIR/default.autopilotrc
-    [ -e "$BASEDIR/{{ stack }}.autopilotrc" ] &amp;&amp; AUTOPILOTRC=$BASEDIR/{{ stack }}.autopilotrc
-    $BINDIR/cu2d-autopilot-report -C $AUTOPILOTRC $JUNIT
+    AUTOPILOTRC={{ BASEDIR }}/default.autopilotrc
+    [ -e "{{ BASEDIR }}/{{ stack }}.autopilotrc" ] &amp;&amp; AUTOPILOTRC=$BASEDIR/{{ stack }}.autopilotrc
+    {{ BINDIR }}/cu2d-autopilot-report -C $AUTOPILOTRC $JUNIT
     RET=$?
 
     if [ $RET -gt 0 ]; then
