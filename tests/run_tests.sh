@@ -6,6 +6,6 @@ if ! which pyruntest > /dev/null; then
     exit 1
 fi
 
-cd ..
+cd $(dirname $0)/..
 pyruntest tests
 exit $?
