@@ -6,7 +6,7 @@ from testtools.matchers import Equals
 
 class TestDictUnion(TestWithScenarios, TestCase):
     scenarios = [
-        ('simple_case',
+        ('no_defaults',
          {
              'result_dict': {},
              'other_dict': {'stack': 'my stack'},
