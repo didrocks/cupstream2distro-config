@@ -1,0 +1,159 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>&lt;B&gt;PURPOSE:&lt;/B&gt; Autolanding job for {{target_branch}}&lt;BR&gt;&#xd;
+&lt;B&gt;TEAM:&lt;/B&gt; {{irc_channel}}&lt;BR&gt;&#xd;
+&lt;B&gt;POC:&lt;/B&gt; {{contact_email}}&lt;BR&gt;&#xd;</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.queueSorter.PrioritySorterJobProperty>
+      <priority>100</priority>
+    </hudson.queueSorter.PrioritySorterJobProperty>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>autolanding</name>
+          <description>Specifies that this is an autolanding/merge job. Used to properly set package version string.</description>
+          <defaultValue>True</defaultValue>
+        </hudson.model.StringParameterDefinition>
+{% for parameter in parameter_list %}
+        <hudson.model.StringParameterDefinition>
+          <name>{{ parameter.name }}</name>
+          <description>{{ parameter.description }}</description>
+          <defaultValue>{{ parameter.value }}</defaultValue>
+        </hudson.model.StringParameterDefinition>
+{% endfor %}
+{% if use_description_for_commit %}
+        <hudson.model.BooleanParameterDefinition>
+          <name>use_description_for_commit</name>
+          <description>If launchpad commit message is not set in Merge Proposal and you use &quot;usr_description_for_commit&quot; then the description will be used for the merge message (i.e. you will see launchpad description in your bzr log).</description>
+          <defaultValue>{{ use_description_for_commit }}</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+{% endif %}
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+    <hudson.plugins.build__publisher.ExternalProjectProperty/>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <canRoam>true</canRoam>
+  <disabled>{{ disabled }}</disabled>
+  <blockBuildWhenDownstreamBuilding>true</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers class="vector"/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.plugins.parameterizedtrigger.TriggerBuilder>
+      <configs>
+        <hudson.plugins.parameterizedtrigger.BlockableBuildTriggerConfig>
+          <configs>
+            <hudson.plugins.parameterizedtrigger.CurrentBuildParameters/>
+          </configs>
+          <projects>{{ builder_list }}</projects>
+          <condition>ALWAYS</condition>
+          <triggerWithNoParameters>false</triggerWithNoParameters>
+          <block>
+            <buildStepFailureThreshold>
+              <name>FAILURE</name>
+              <ordinal>2</ordinal>
+              <color>RED</color>
+            </buildStepFailureThreshold>
+            <unstableThreshold>
+              <name>UNSTABLE</name>
+              <ordinal>1</ordinal>
+              <color>YELLOW</color>
+            </unstableThreshold>
+            <failureThreshold>
+              <name>FAILURE</name>
+              <ordinal>2</ordinal>
+              <color>RED</color>
+            </failureThreshold>
+          </block>
+          <buildAllNodesWithLabel>false</buildAllNodesWithLabel>
+        </hudson.plugins.parameterizedtrigger.BlockableBuildTriggerConfig>
+      </configs>
+    </hudson.plugins.parameterizedtrigger.TriggerBuilder>
+  </builders>
+  <publishers>
+{% if contact_email %}
+    <hudson.tasks.Mailer>
+      <recipients>{{ contact_email }}</recipients>
+      <dontNotifyEveryUnstableBuild>false</dontNotifyEveryUnstableBuild>
+      <sendToIndividuals>false</sendToIndividuals>
+    </hudson.tasks.Mailer>
+{% endif %}
+{% if publish %}
+    <hudson.plugins.build__publisher.BuildPublisher>
+      <publishUnstableBuilds>true</publishUnstableBuilds>
+      <publishFailedBuilds>true</publishFailedBuilds>
+      <postActions class="vector"/>
+    </hudson.plugins.build__publisher.BuildPublisher>
+{% endif %}
+    <hudson.plugins.parameterizedtrigger.BuildTrigger>
+      <configs>
+        <hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
+          <configs>
+            <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
+              <properties>target_branch=${target_branch}
+source_branch=${landing_candidate}
+merge_proposal=${merge_proposal}
+revision=${candidate_revision}
+buildjob_url=${BUILD_URL}
+test_result=FAILED</properties>
+            </hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
+          </configs>
+          <projects>generic-land</projects>
+          <condition>UNSTABLE_OR_WORSE</condition>
+          <triggerWithNoParameters>false</triggerWithNoParameters>
+        </hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
+        <hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
+          <configs>
+            <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
+              <properties>target_branch=${target_branch}
+source_branch=${landing_candidate}
+merge_proposal=${merge_proposal}
+revision=${candidate_revision}
+packaging_branch=${packaging_branch}
+ppa_target=${ppa_target}
+distributions=${distributions}
+buildjob_url=${BUILD_URL}
+use_description_for_commit=${use_description_for_commit}
+version_string_format=${version_string_format}
+hooks=${dput_hooks}
+test_result=PASSED</properties>
+            </hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
+          </configs>
+          <projects>generic-land</projects>
+          <condition>SUCCESS</condition>
+          <triggerWithNoParameters>false</triggerWithNoParameters>
+        </hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
+        <hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
+          <configs>
+            <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
+              <properties>local_archive_host=$local_archive_host
+local_archive_login=$local_archive_login
+temp_dir=${local_archive_tmp}/${project}-al-${local_archive_pocket}-${BUILD_NUMBER}
+ppa_build_number=${BUILD_NUMBER}
+distributions=</properties>
+            </hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
+          </configs>
+          <projects>{{ dput_project }}</projects>
+          <condition>SUCCESS</condition>
+          <triggerWithNoParameters>false</triggerWithNoParameters>
+        </hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
+        <hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
+          <configs>
+            <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
+              <properties>local_archive_host=$local_archive_host
+local_archive_login=$local_archive_login
+temp_dir=${local_archive_tmp}/${project}-al-${local_archive_pocket}-${BUILD_NUMBER}</properties>
+            </hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
+          </configs>
+          <projects>generic-cleanup-mbs-pt</projects>
+          <condition>UNSTABLE_OR_WORSE</condition>
+          <triggerWithNoParameters>false</triggerWithNoParameters>
+        </hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
+      </configs>
+    </hudson.plugins.parameterizedtrigger.BuildTrigger>
+  </publishers>
+  <buildWrappers/>
+</project>

@@ -1,0 +1,129 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>&lt;B&gt;PURPOSE:&lt;/B&gt; Autolanding job for {{target_branch}} {{ configuration }}&lt;BR&gt;&#xd;
+&lt;B&gt;TEAM:&lt;/B&gt; {{irc_channel}}&lt;BR&gt;&#xd;
+&lt;B&gt;POC:&lt;/B&gt; {{contact_email}}&lt;BR&gt;&#xd;</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.queueSorter.PrioritySorterJobProperty>
+      <priority>100</priority>
+    </hudson.queueSorter.PrioritySorterJobProperty>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>autolanding</name>
+          <description>Specifies that this is an autolanding/merge job. Used to properly set package version string.</description>
+          <defaultValue>True</defaultValue>
+        </hudson.model.StringParameterDefinition>
+{% for parameter in parameter_list %}
+        <hudson.model.StringParameterDefinition>
+          <name>{{ parameter.name }}</name>
+          <description>{{ parameter.description }}</description>
+          <defaultValue>{{ parameter.value }}</defaultValue>
+        </hudson.model.StringParameterDefinition>
+{% endfor %}
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <assignedNode>{{ node_label }}</assignedNode>
+  <canRoam>false</canRoam>
+  <disabled>{{ disabled }}</disabled>
+  <blockBuildWhenDownstreamBuilding>true</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers class="vector"/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>{{ acquire_hook_script }}</command>
+    </hudson.tasks.Shell>
+    <com.ubuntu.builder.PBuilderPlugin>
+      <hooks>$hooks</hooks>
+      <mainBranch>$landing_candidate</mainBranch>
+      <packagingBranch></packagingBranch>
+      <targetBranch>$target_branch</targetBranch>
+      <extraHookDir>{{ hook_location }}</extraHookDir>
+      <parallelJobs>{{ parallel_jobs }}</parallelJobs>
+      <distroArch>{{ configuration }}</distroArch>
+    </com.ubuntu.builder.PBuilderPlugin>
+  </builders>
+  <publishers>
+{% if archive_artifacts %}
+    <hudson.tasks.ArtifactArchiver>
+      <artifacts>{{ archive_artifacts }}</artifacts>
+      <latestOnly>false</latestOnly>
+    </hudson.tasks.ArtifactArchiver>
+{% endif %}
+{% if publish_coverage %}
+    <hudson.plugins.cobertura.CoberturaPublisher>
+      <coberturaReportFile>{{ publish_coverage }}</coberturaReportFile>
+      <onlyStable>false</onlyStable>
+      <healthyTarget>
+        <targets class="enum-map" enum-type="hudson.plugins.cobertura.targets.CoverageMetric">
+          <entry>
+            <hudson.plugins.cobertura.targets.CoverageMetric>CONDITIONAL</hudson.plugins.cobertura.targets.CoverageMetric>
+            <int>70</int>
+          </entry>
+          <entry>
+            <hudson.plugins.cobertura.targets.CoverageMetric>LINE</hudson.plugins.cobertura.targets.CoverageMetric>
+            <int>80</int>
+          </entry>
+          <entry>
+            <hudson.plugins.cobertura.targets.CoverageMetric>METHOD</hudson.plugins.cobertura.targets.CoverageMetric>
+            <int>80</int>
+          </entry>
+        </targets>
+      </healthyTarget>
+      <unhealthyTarget>
+        <targets class="enum-map" enum-type="hudson.plugins.cobertura.targets.CoverageMetric">
+          <entry>
+            <hudson.plugins.cobertura.targets.CoverageMetric>CONDITIONAL</hudson.plugins.cobertura.targets.CoverageMetric>
+            <int>0</int>
+          </entry>
+          <entry>
+            <hudson.plugins.cobertura.targets.CoverageMetric>LINE</hudson.plugins.cobertura.targets.CoverageMetric>
+            <int>0</int>
+          </entry>
+          <entry>
+            <hudson.plugins.cobertura.targets.CoverageMetric>METHOD</hudson.plugins.cobertura.targets.CoverageMetric>
+            <int>0</int>
+          </entry>
+        </targets>
+      </unhealthyTarget>
+      <failingTarget>
+        <targets class="enum-map" enum-type="hudson.plugins.cobertura.targets.CoverageMetric">
+          <entry>
+            <hudson.plugins.cobertura.targets.CoverageMetric>CONDITIONAL</hudson.plugins.cobertura.targets.CoverageMetric>
+            <int>0</int>
+          </entry>
+          <entry>
+            <hudson.plugins.cobertura.targets.CoverageMetric>LINE</hudson.plugins.cobertura.targets.CoverageMetric>
+            <int>0</int>
+          </entry>
+          <entry>
+            <hudson.plugins.cobertura.targets.CoverageMetric>METHOD</hudson.plugins.cobertura.targets.CoverageMetric>
+            <int>0</int>
+          </entry>
+        </targets>
+      </failingTarget>
+      <sourceEncoding>ASCII</sourceEncoding>
+    </hudson.plugins.cobertura.CoberturaPublisher>
+{% endif %}
+{% if publish_junit %}
+    <hudson.tasks.junit.JUnitResultArchiver>
+      <testResults>{{ publish_junit }}</testResults>
+      <keepLongStdio>false</keepLongStdio>
+      <testDataPublishers/>
+    </hudson.tasks.junit.JUnitResultArchiver>
+{% endif %}
+{% if publish %}
+    <hudson.plugins.build__publisher.BuildPublisher>
+      <publishUnstableBuilds>true</publishUnstableBuilds>
+      <publishFailedBuilds>true</publishFailedBuilds>
+      <postActions class="vector"/>
+    </hudson.plugins.build__publisher.BuildPublisher>
+{% endif %}
+  </publishers>
+  <buildWrappers/>
+</project>
