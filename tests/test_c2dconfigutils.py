@@ -1,5 +1,5 @@
 from testscenarios import TestWithScenarios
-from c2dconfigutils import dict_union
+from c2dconfigutils.c2dconfigutils import dict_union
 from testtools import TestCase
 from testtools.matchers import Equals
 
