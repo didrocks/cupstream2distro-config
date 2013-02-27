@@ -31,7 +31,7 @@ import jinja2
 import jenkins
 import argparse
 import subprocess
-from c2dconfigutils import dict_union
+from c2dconfigutils.c2dconfigutils import dict_union
 
 sys.path.append('..')  # add local cupstream2distro
 from launchpadlib.launchpad import Launchpad
