@@ -31,6 +31,7 @@ import jinja2
 import jenkins
 import argparse
 import subprocess
+from c2dconfigutils.c2dconfigutils import dict_union
 
 sys.path.append('..')  # add local cupstream2distro
 from launchpadlib.launchpad import Launchpad
@@ -47,14 +48,6 @@ TEMPLATES = {
     'publish': 'publish-stack-config.xml.tmpl'
 }
 DEFAULT_CREDENTIALS = os.path.expanduser('~/.cu2d.cred')
-
-def dict_union(result_dict, other_dict):
-    for key, val in other_dict.iteritems():
-        if not isinstance(val, dict):
-            result_dict[key] = val
-        else:
-            subdict = result_dict.setdefault(key, {})
-            dict_union(subdict, val)
 
 def load_jenkins_credentials(path):
     """ Load Credentials from credentials configuration file """
