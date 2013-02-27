@@ -27,7 +27,7 @@ class TestDictUnion(TestWithScenarios, TestCase):
         ('no_default_fasttrack',
          {
              'result_dict': {'stack': {'projects': {
-                 'compiz'}}},
+                 'compiz': {}}}},
              'other_dict': {'stack': {'projects': {
                  'compiz': {'fasttrack': False}}}},
              'expected_result': {'stack': {'projects': {
