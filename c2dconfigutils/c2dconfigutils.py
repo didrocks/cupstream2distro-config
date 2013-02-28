@@ -2,6 +2,7 @@ import logging
 import os
 import yaml
 
+
 def dict_union(result_dict, other_dict):
     for key, val in other_dict.iteritems():
         if not isinstance(val, dict):
@@ -9,6 +10,7 @@ def dict_union(result_dict, other_dict):
         else:
             subdict = result_dict.setdefault(key, {})
             dict_union(subdict, val)
+
 
 def load_jenkins_credentials(path, jenkins_name):
     """ Load Credentials from credentials configuration file """
