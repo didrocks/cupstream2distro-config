@@ -1,13 +1,13 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <project>
   <actions/>
-  <description>&lt;B&gt;PURPOSE:&lt;/B&gt; Autolanding job for {{target_branch}}&lt;BR&gt;&#xd;
-&lt;B&gt;TEAM:&lt;/B&gt; {{irc_channel}}&lt;BR&gt;&#xd;
-&lt;B&gt;POC:&lt;/B&gt; {{contact_email}}&lt;BR&gt;&#xd;</description>
+  <description>&lt;B&gt;PURPOSE:&lt;/B&gt; Autolanding job for {{ target_branch }}&lt;BR&gt;&#xd;
+&lt;B&gt;TEAM:&lt;/B&gt; {{ team }}&lt;BR&gt;&#xd;
+&lt;B&gt;POC:&lt;/B&gt; {{ contact_email }}&lt;BR&gt;&#xd;</description>
   <keepDependencies>false</keepDependencies>
   <properties>
     <hudson.queueSorter.PrioritySorterJobProperty>
-      <priority>100</priority>
+      <priority>{{ priority }}</priority>
     </hudson.queueSorter.PrioritySorterJobProperty>
     <hudson.model.ParametersDefinitionProperty>
       <parameterDefinitions>
@@ -94,14 +94,14 @@
           <configs>
             <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
               <properties>target_branch=${target_branch}
-source_branch=${landing_candidate}
+source_branch=${source_branch}
 merge_proposal=${merge_proposal}
 revision=${candidate_revision}
 buildjob_url=${BUILD_URL}
 test_result=FAILED</properties>
             </hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
           </configs>
-          <projects>generic-land</projects>
+          <projects>{{ landing_job }}</projects>
           <condition>UNSTABLE_OR_WORSE</condition>
           <triggerWithNoParameters>false</triggerWithNoParameters>
         </hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
@@ -109,7 +109,7 @@ test_result=FAILED</properties>
           <configs>
             <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
               <properties>target_branch=${target_branch}
-source_branch=${landing_candidate}
+source_branch=${source_branch}
 merge_proposal=${merge_proposal}
 revision=${candidate_revision}
 packaging_branch=${packaging_branch}
@@ -122,7 +122,7 @@ hooks=${dput_hooks}
 test_result=PASSED</properties>
             </hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
           </configs>
-          <projects>generic-land</projects>
+          <projects>{{ landing-job }}</projects>
           <condition>SUCCESS</condition>
           <triggerWithNoParameters>false</triggerWithNoParameters>
         </hudson.plugins.parameterizedtrigger.BuildTriggerConfig>

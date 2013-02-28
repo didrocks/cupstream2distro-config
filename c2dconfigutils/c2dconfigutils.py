@@ -10,14 +10,14 @@ def dict_union(result_dict, other_dict):
             subdict = result_dict.setdefault(key, {})
             dict_union(subdict, val)
 
-def load_jenkins_credentials(path):
+def load_jenkins_credentials(path, jenkins_name):
     """ Load Credentials from credentials configuration file """
     if not os.path.exists(path):
         return False
 
     logging.debug('Loading credentials from %s', path)
     cred = yaml.safe_load(file(path, 'r'))
-    return False if not 'jenkins' in cred else cred['jenkins']
+    return False if not jenkins_name in cred else cred[jenkins_name]
 
 
 def load_default_cfg(basedir):

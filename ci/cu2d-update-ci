@@ -31,16 +31,19 @@ import jinja2
 import jenkins
 import argparse
 from textwrap import dedent
+
+sys.path.append('..')  # add local cupstream2distro
+
 from c2dconfigutils.c2dconfigutils import (
     dict_union, load_jenkins_credentials, load_default_cfg, load_stack_cfg,
     setup_job, set_logging)
 
-sys.path.append('..')  # add local cupstream2distro
 
 BASEDIR = os.path.dirname(__file__)
 PREFIX = 'cu2d'
 
 DEFAULT_CREDENTIALS = os.path.expanduser('~/.cu2d.cred')
+JENKINS_CI_CONFIG_NAME = 'ci-jenkins'
 
 TEMPLATE_KEYS = [
     'ci_template',
@@ -50,6 +53,7 @@ TEMPLATE_KEYS = [
 
 TEMPLATE_CONTEXT_KEYS = [
     'contact_email',
+    'team',
     'hook_source',
     'fasttrack',
     'disabled',
@@ -185,12 +189,11 @@ def process_stack(job_list, stack):
     # prepare by project
     for project_name in stack['projects']:
         # Merge the default config with the project specific config
-        project_config = copy.deepcopy(stack['upstream_default'])
+        project_config = copy.deepcopy(stack['ci_default'])
         dict_union(project_config, stack['projects'][project_name])
 
         ci_template = None
         autolanding_template = None
-        subjob_template = None
         ci_only_dict = dict()
         autolanding_only_dict = dict()
 
@@ -210,14 +213,16 @@ def process_stack(job_list, stack):
         # Create ci job, add back in the ci dict
         if ci_template:
             ci_dict = copy.deepcopy(project_config)
-            dict_union(ci_dict, ci_only_dict)
+            if ci_only_dict is not None:
+                dict_union(ci_dict, ci_only_dict)
             generate_jobs(job_list, project_name, 'ci', ci_dict,
                           ci_template, build_template)
 
         # Create autolanding job, add back in the autolanding dict
         if autolanding_template:
             autolanding_dict = copy.deepcopy(project_config)
-            dict_union(autolanding_dict, autolanding_only_dict)
+            if autolanding_only_dict is not None:
+                dict_union(autolanding_dict, autolanding_only_dict)
             generate_jobs(job_list, project_name, 'autolanding',
                           autolanding_dict, autolanding_template,
                           build_template)
@@ -257,8 +262,6 @@ def update_jenkins(jenkins_config, stack, update=False):
     else:
         jenkins_handle = jenkins.Jenkins(jenkins_config['url'])
 
-    basename = [PREFIX, stack['name'], stack['release']]
-
     if stack['projects']:
         job_list = []
         process_stack(job_list, stack)
@@ -270,12 +273,12 @@ def update_jenkins(jenkins_config, stack, update=False):
 def main():
     ''' Main routine '''
     parser = argparse.ArgumentParser(
-        description='Create/Update the configuration of the Jenkins jobs '
-                    'for a stack.',
+        description='Create/Update the configuration of the Jenkins ci and '
+                    'autolanding jobs for a stack.',
         epilog=dedent("""\
             Example:
             To update the indicator stack run the following command:
-                $ ./cu2d-update-stack -dU ./etc/indicators-head.cfg
+                $ ./cu2d-update-ci -dU ./etc/indicators-head.cfg
             """),
         formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('-C', '--credentials', metavar='CREDENTIALFILE',
@@ -304,7 +307,7 @@ def main():
     if args.credentials:
         credentialsfile = args.credentials
         credentials = load_jenkins_credentials(
-            os.path.expanduser(credentialsfile))
+            os.path.expanduser(credentialsfile), JENKINS_CI_CONFIG_NAME)
         if not credentials:
             logging.error('Credentials not found. Aborting!')
             sys.exit(1)

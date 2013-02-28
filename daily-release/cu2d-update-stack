@@ -28,14 +28,16 @@ import logging
 import sys
 import jinja2
 import jenkins
+from launchpadlib.launchpad import Launchpad
 import argparse
 import subprocess
-from c2dconfigutils.c2dconfigutils import (
-    dict_union, load_jenkins_credentials, load_default_cfg, load_stack_cfg,
-    setup_job, set_logging)
 
 sys.path.append('..')  # add local cupstream2distro
-from launchpadlib.launchpad import Launchpad
+
+from c2dconfigutils.c2dconfigutils import (
+    load_jenkins_credentials, load_default_cfg, load_stack_cfg,
+    setup_job, set_logging)
+
 
 BASEDIR = os.path.dirname(__file__)
 PREFIX = 'cu2d'
@@ -49,6 +51,7 @@ TEMPLATES = {
     'publish': 'publish-stack-config.xml.tmpl'
 }
 DEFAULT_CREDENTIALS = os.path.expanduser('~/.cu2d.cred')
+JENKINS_DAILY_CONFIG_NAME = 'jenkins'
 
 
 def get_launchpad_branch(prj, source_name):
@@ -246,7 +249,7 @@ To update the indicator stack run the following command:
     if args.credentials:
         credentialsfile = args.credentials
         credentials = load_jenkins_credentials(
-            os.path.expanduser(credentialsfile))
+            os.path.expanduser(credentialsfile), JENKINS_DAILY_CONFIG_NAME)
         if not credentials:
             logging.error('Credentials not found. Aborting!')
             sys.exit(1)
