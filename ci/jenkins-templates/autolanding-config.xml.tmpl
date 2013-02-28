@@ -11,11 +11,6 @@
     </hudson.queueSorter.PrioritySorterJobProperty>
     <hudson.model.ParametersDefinitionProperty>
       <parameterDefinitions>
-        <hudson.model.StringParameterDefinition>
-          <name>autolanding</name>
-          <description>Specifies that this is an autolanding/merge job. Used to properly set package version string.</description>
-          <defaultValue>True</defaultValue>
-        </hudson.model.StringParameterDefinition>
 {% for parameter in parameter_list %}
         <hudson.model.StringParameterDefinition>
           <name>{{ parameter.name }}</name>

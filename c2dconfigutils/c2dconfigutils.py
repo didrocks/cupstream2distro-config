@@ -1,5 +1,6 @@
 import logging
 import os
+import urllib2
 import yaml
 
 
@@ -66,6 +67,7 @@ def setup_job(jenkins_handle, jjenv, jobname, tmplname, ctx, update=False):
     jkcfg = tmpl.render(ctx)
     jkcfg = jkcfg.replace(' \n', '')
     jkcfg = jkcfg.replace('>\n\n', '>\n')
+    jobname = urllib2.quote(jobname)
     if not jenkins_handle.job_exists(jobname):
         logging.info("Creating Jenkins Job %s ", jobname)
         jenkins_handle.create_job(jobname, jkcfg)
