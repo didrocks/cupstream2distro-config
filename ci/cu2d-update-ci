@@ -23,6 +23,7 @@ file
 # You should have received a copy of the GNU General Public License
 # along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
+import copy
 import os
 import logging
 import sys
@@ -47,7 +48,6 @@ TEMPLATE_KEYS = [
 
 TEMPLATE_CONTEXT_KEYS = [
     'contact_email',
-    'hooks',
     'hook_source',
     'fasttrack',
     'disabled',
@@ -162,14 +162,16 @@ def add_parameter(ctx, name, value):
     ctx['parameter_list'].append(parameter)
 
 
-def process_project_config(project_name, project_config, ctx, configurations):
+def process_project_config(project_name, project_config):
     """ Generates the template context from a project configuration
 
     :param project_name: the project name from the stack definition
     :param project_config: dictionary containing the project definition
-    :param ctx: template context generated from the project_config
     :param configurations: build configurations found in the project_config
+
+    :return ctx: template context dict generated from the project_config
     """
+    ctx = dict()
     parameters = dict()
     for key in project_config:
         data = project_config[key]
@@ -188,9 +190,6 @@ def process_project_config(project_name, project_config, ctx, configurations):
         elif key in TEMPLATE_CONTEXT_KEYS:
             # These are added as ctx keys only
             ctx[key] = data
-        elif key == 'configurations':
-            for config in data:
-                configurations.append(config)
         else:
             # Everything else is added as a parameter and a ctx key
             parameters[key] = data
@@ -206,6 +205,7 @@ def process_project_config(project_name, project_config, ctx, configurations):
     for parameter in parameters:
         ctx[parameter] = parameters[parameter]
         add_parameter(ctx, parameter, parameters[parameter])
+    return ctx
 
 
 def generate_jobs(job_list, project_name, job_type, job_config, job_template,
@@ -218,26 +218,35 @@ def generate_jobs(job_list, project_name, job_type, job_config, job_template,
     :param job_config: dictionary containing the job definition
     :param job_template: template used to define the main job
     :param build_template: template used to define the build jobs
+        elif key == 'configurations':
+            for config in data:
+                configurations.append(config)
     """
-        jobname = "-".join([project_name, job_type])
-        ctx = dict()
-        configurations = list()
-        process_project_config(project_name, job_config, ctx, configurations)
+    build_list = []
+    if 'configurations' in job_config:
+        configurations = job_config.pop('configurations')
+        for config_name in configurations:
+            build_config = copy.deepcopy(job_config)
+            build_config['configuration'] = config_name
 
-        build_list = []
-        for configuration in configurations:
-            config_name = configuration.keys()[0]
-            data = configuration[config_name]
-            build_ctx = dict(ctx)
-            build_ctx['configuration'] = config_name
-            build_ctx['node_label'] = data['node_label']
-            if data['template']:
-                build_template = data['template']
+            data = copy.deepcopy(configurations[config_name])
+            if 'template' in data:
+                template = data.pop('template')
+            else:
+                template = build_template
+            dict_union(build_config, data)
+
+            ctx = process_project_config(project_name, build_config)
+
             build_name = '-'.join([project_name, config_name, job_type])
             build_list.append(build_name)
-            job_list.append([build_name, build_template, build_ctx])
-        ctx['builder_list'] = ','.join(build_list)
-        job_list.append([jobname, job_template, ctx])
+            job_list.append([build_name, template, ctx])
+
+    ctx = process_project_config(project_name, job_config)
+
+    ctx['builder_list'] = ','.join(build_list)
+    job_name = "-".join([project_name, job_type])
+    job_list.append([job_name, job_template, ctx])
 
 
 def process_stack(job_list, stack):
@@ -249,7 +258,7 @@ def process_stack(job_list, stack):
     # prepare by project
     for project_name in stack['projects']:
         # Merge the default config with the project specific config
-        project_config = dict(stack['upstream_default'])
+        project_config = copy.deepcopy(stack['upstream_default'])
         dict_union(project_config, stack['projects'][project_name])
 
         ci_template = None
@@ -272,16 +281,19 @@ def process_stack(job_list, stack):
             build_template = project_config.pop('build_template')
 
         # Create ci job, add back in the ci dict
-        ci_dict = dict(project_config)
-        dict_union(ci_dict, ci_only_dict)
-        generate_jobs(job_list, project_name, 'ci', ci_dict,
-                      ci_template, build_template)
+        if ci_template:
+            ci_dict = copy.deepcopy(project_config)
+            dict_union(ci_dict, ci_only_dict)
+            generate_jobs(job_list, project_name, 'ci', ci_dict,
+                          ci_template, build_template)
 
         # Create autolanding job, add back in the autolanding dict
-        autolanding_dict = dict(project_config)
-        dict_union(autolanding_dict, autolanding_only_dict)
-        generate_jobs(job_list, project_name, 'autolanding', autolanding_dict,
-                      autolanding_template, build_template)
+        if autolanding_template:
+            autolanding_dict = copy.deepcopy(project_config)
+            dict_union(autolanding_dict, autolanding_only_dict)
+            generate_jobs(job_list, project_name, 'autolanding',
+                          autolanding_dict, autolanding_template,
+                          build_template)
 
 
 def update_jenkins(jenkins_config, stack, update=False):
