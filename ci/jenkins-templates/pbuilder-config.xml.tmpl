@@ -121,5 +121,14 @@
     </hudson.plugins.build__publisher.BuildPublisher>
 {% endif %}
   </publishers>
+{% if build_timeout %}
+  <buildWrappers>
+    <hudson.plugins.build__timeout.BuildTimeoutWrapper>
+      <timeoutMinutes>{{ build_timeout }}</timeoutMinutes>
+      <failBuild>true</failBuild>
+    </hudson.plugins.build__timeout.BuildTimeoutWrapper>
+  </buildWrappers>
+{% else %}
   <buildWrappers/>
+{% endif %}
 </project>
