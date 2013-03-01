@@ -5,6 +5,8 @@ import yaml
 
 
 def dict_union(result_dict, other_dict):
+    if other_dict is None:
+        return
     for key, val in other_dict.iteritems():
         if not isinstance(val, dict):
             result_dict[key] = val
