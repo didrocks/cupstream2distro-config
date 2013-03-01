@@ -94,7 +94,7 @@
           <configs>
             <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
               <properties>target_branch=${target_branch}
-source_branch=${source_branch}
+landing_candidate=${source_branch}
 merge_proposal=${merge_proposal}
 revision=${candidate_revision}
 buildjob_url=${BUILD_URL}
@@ -109,7 +109,7 @@ test_result=FAILED</properties>
           <configs>
             <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
               <properties>target_branch=${target_branch}
-source_branch=${source_branch}
+landing_candidate=${source_branch}
 merge_proposal=${merge_proposal}
 revision=${candidate_revision}
 packaging_branch=${packaging_branch}

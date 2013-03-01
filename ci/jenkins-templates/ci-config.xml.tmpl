@@ -83,7 +83,7 @@
             <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
               <properties>ci_result=FAILED
 ci_build=${BUILD_URL}
-ci_branch=${source_branch}
+ci_branch=${landing_candidate}
 ci_merge_proposal=${merge_proposal}
 ci_revision=${candidate_revision}</properties>
             </hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
@@ -97,7 +97,7 @@ ci_revision=${candidate_revision}</properties>
             <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
               <properties>ci_result=PASSED
 ci_build=${BUILD_URL}
-ci_branch=${source_branch}
+ci_branch=${landing_candidate}
 ci_merge_proposal=${merge_proposal}
 ci_revision=${candidate_revision}</properties>
             </hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
