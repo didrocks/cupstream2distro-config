@@ -26,15 +26,18 @@ file
 import os
 import logging
 import sys
-import yaml
 import jinja2
 import jenkins
+from launchpadlib.launchpad import Launchpad
 import argparse
 import subprocess
-from c2dconfigutils.c2dconfigutils import dict_union
 
 sys.path.append('..')  # add local cupstream2distro
-from launchpadlib.launchpad import Launchpad
+
+from c2dconfigutils.c2dconfigutils import (
+    load_jenkins_credentials, load_default_cfg, load_stack_cfg,
+    setup_job, set_logging)
+
 
 BASEDIR = os.path.dirname(__file__)
 PREFIX = 'cu2d'
@@ -48,50 +51,15 @@ TEMPLATES = {
     'publish': 'publish-stack-config.xml.tmpl'
 }
 DEFAULT_CREDENTIALS = os.path.expanduser('~/.cu2d.cred')
+JENKINS_DAILY_CONFIG_NAME = 'jenkins'
 
-def load_jenkins_credentials(path):
-    """ Load Credentials from credentials configuration file """
-    if not os.path.exists(path):
-        return False
-
-    logging.debug('Loading credentials from %s', path)
-    cred = yaml.load(file(path, 'r'))
-    return False if not 'jenkins' in cred else cred['jenkins']
-
-def load_default_cfg():
-    """ Load default stack configuration from the defaults.conf file"""
-
-    config_file = os.path.join(BASEDIR, "config", "defaults.conf")
-    if not os.path.isfile(config_file):
-        return False
-
-    logging.debug('Loading default stack configuration from %s', config_file)
-    cfg = yaml.load(file(config_file, 'r'))
-    return False if not cfg else cfg
-
-
-def load_stack_cfg(path, default_config):
-    """ Load stack configuration from file, extending default_config
-
-    TODO: Verify that mandatory settings are defined
-    """
-
-    if not os.path.exists(path):
-        return False
-
-    logging.debug('Loading stack configuration from %s', path)
-    cfg = yaml.load(file(path, 'r'))
-    if not 'stack' in cfg:
-        return False
-
-    dict_union(default_config, cfg)
-    return default_config['stack']
 
 def get_launchpad_branch(prj, source_name):
     """Get the right a launchpad branch url from source_name if not overriden"""
     if isinstance(prj, dict) and 'target_branch' in prj:
         return prj['target_branch']
     return "lp:{}".format(source_name)
+
 
 def setup_branch(stack):
     """Configure the branch so that lp-propose target the wanted one
@@ -115,32 +83,6 @@ def setup_branch(stack):
             if subprocess.call(cmd) != 0:
                 logging.error("Can't set the target branch {} for {}".format(current_branch.unique_name, lpb))
                 sys.exit(1)
-
-
-def setup_job(jkh, jjenv, jobname, tmplname, ctx, update=False):
-    """ Generate template and create or update jenkins job
-
-    :param jkh: jenkins handle
-    :param jjenv: handle to jinja environment
-    :param jobname: jenkins' job name
-    :param tmplname: template name
-    :param ctx: jinja context (dict) to merge with the template
-    :param update: update existing job if True
-    """
-    logging.debug('Generating job: %s', jobname)
-    tmpl = jjenv.get_template(tmplname)
-    jkcfg = tmpl.render(ctx)
-    if not jkh.job_exists(jobname):
-        logging.info("Creating Jenkins Job %s ", jobname)
-        jkh.create_job(jobname, jkcfg)
-    else:
-        if update:
-            logging.info("Reconfiguring Jenkins Job %s ", jobname)
-            jkh.reconfig_job(jobname, jkcfg)
-        else:
-            logging.debug('update set to %s. Skipping reconfiguration of '
-                          '%s', update, jobname)
-    return True
 
 
 def update_jenkins(jkcfg, stack, update=False):
@@ -262,15 +204,6 @@ def update_jenkins(jkcfg, stack, update=False):
     return True
 
 
-def set_logging(debugmode=False):
-    """Initialize logging"""
-    logging.basicConfig(
-        level=logging.DEBUG if debugmode else logging.INFO,
-        format="%(asctime)s %(levelname)s %(message)s"
-        )
-    logging.debug('Debug mode enabled')
-
-
 def main():
     ''' Main routine '''
     parser = argparse.ArgumentParser(
@@ -304,7 +237,7 @@ To update the indicator stack run the following command:
     args = parser.parse_args()
     set_logging(args.debug)
 
-    default_config = load_default_cfg()
+    default_config = load_default_cfg(BASEDIR)
     stackcfg = load_stack_cfg(args.stackcfg, default_config)
     if not stackcfg:
         logging.error('Stack configuration failed to load. Aborting!')
@@ -316,7 +249,7 @@ To update the indicator stack run the following command:
     if args.credentials:
         credentialsfile = args.credentials
         credentials = load_jenkins_credentials(
-            os.path.expanduser(credentialsfile))
+            os.path.expanduser(credentialsfile), JENKINS_DAILY_CONFIG_NAME)
         if not credentials:
             logging.error('Credentials not found. Aborting!')
             sys.exit(1)
