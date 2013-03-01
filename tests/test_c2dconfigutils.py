@@ -42,6 +42,14 @@ class TestDictUnion(TestWithScenarios, TestCase):
              'expected_result': {'stack': {'projects': {
                  'compiz': {'fasttrack': False},
                  'unity': {'fasttrack': True}}}}}),
+        ('lp1137400_only_default_config',
+         {
+             'result_dict': {'stack': {'projects': {
+                 'compiz': {'fasttrack': True}}}},
+             'other_dict': None,
+             'expected_result': {'stack': {'projects': {
+                 'compiz': {'fasttrack': True}}}}}),
+
 
     ]
 
