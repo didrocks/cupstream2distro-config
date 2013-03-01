@@ -148,6 +148,11 @@ def update_jenkins(jkcfg, stack, update=False):
             dict_union(project_config, stack['projects'][srcname])
             stack['projects'][srcname] = project_config
 
+            if not stack['projects'][srcname]['daily_release']:
+                logging.info(srcname +
+                             " not configured for daily release. Skipping.")
+                continue
+
             lpb = get_launchpad_branch(stack['projects'][srcname], srcname)
 
             jobname = "-".join(basename + ['1.1prepare', srcname])
