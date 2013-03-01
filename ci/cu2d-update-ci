@@ -52,16 +52,22 @@ TEMPLATE_KEYS = [
 ]
 
 TEMPLATE_CONTEXT_KEYS = [
+    'archive_artifacts',
+    'build_timeout',
+    'configuration',
     'contact_email',
-    'team',
-    'hook_source',
     'fasttrack',
     'disabled',
+    'hook_source',
+    'landing_job',
+    'node_label',
     'parallel_jobs',
-    'archive_artifacts',
+    'publish',
     'publish_coverage',
     'publish_junit',
-    'publish',
+    'priority',
+    'team',
+    'use_description_for_commit',
 ]
 
 DEFAULT_HOOK_LOCATION = '/tmp/$JOB_NAME-hooks'
