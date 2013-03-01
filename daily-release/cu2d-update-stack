@@ -31,12 +31,13 @@ import jenkins
 from launchpadlib.launchpad import Launchpad
 import argparse
 import subprocess
+import copy
 
 sys.path.append('..')  # add local cupstream2distro
 
 from c2dconfigutils.c2dconfigutils import (
     load_jenkins_credentials, load_default_cfg, load_stack_cfg,
-    setup_job, set_logging)
+    setup_job, set_logging, dict_union)
 
 
 BASEDIR = os.path.dirname(__file__)
@@ -143,6 +144,10 @@ def update_jenkins(jkcfg, stack, update=False):
     projects = []
     if stack['projects']:
         for srcname in stack['projects']:
+            project_config = copy.deepcopy(stack['daily_release_default'])
+            dict_union(project_config, stack['projects'][srcname])
+            stack['projects'][srcname] = project_config
+
             lpb = get_launchpad_branch(stack['projects'][srcname], srcname)
 
             jobname = "-".join(basename + ['1.1prepare', srcname])
