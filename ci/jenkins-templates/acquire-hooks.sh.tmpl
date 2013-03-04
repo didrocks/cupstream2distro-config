@@ -4,7 +4,7 @@ set -x
 hook_dir={DEFAULT_HOOK_LOCATION}
 rm -rf "$hook_dir"
 
-if [ -n "$hook_source"; ]; then
+if [ -n "$hook_source" ]; then
     bzr branch "$hook_source" "$hook_dir"
 else
     mkdir "$hook_dir"
