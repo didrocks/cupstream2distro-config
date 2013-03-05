@@ -47,8 +47,8 @@ class JobTrigger(object):
                             help='''specify the path to the
                             jenkins-launchpad-plugin tools (default: %s)''' %
                             self.DEFAULT_PLUGIN_PATH)
-        parser.add_argument('-d', '--debug', action='store_true', default=False,
-                            help='enable debug mode')
+        parser.add_argument('-d', '--debug', action='store_true',
+                            default=False, help='enable debug mode')
         parser.add_argument('stackcfg',
                             help='Path to a configuration file for the stack')
         return parser.parse_args()

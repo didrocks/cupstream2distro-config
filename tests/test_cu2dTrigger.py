@@ -36,7 +36,6 @@ class TestGenerateTrigger(TestWithScenarios, TestCase):
                                  'options': ['--autoland', '--fasttrack']}}),
     ]
 
-
     def setUp(self):
         self.jt = JobTrigger()
 
@@ -78,7 +77,7 @@ class TestProcessStack(TestWithScenarios, TestCase):
          {
              'stack': {'ci_default': ci_default,
                        'projects': {'foo': {'ci_template': None}}},
-             'expected_result': [ {'name': 'foo-autolanding',
+             'expected_result': [{'name': 'foo-autolanding',
                                   'branch': 'lp:foo',
                                   'options': ['--autoland']}]}),
         ('none',
