@@ -22,119 +22,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-import argparse
-import copy
-import logging
-import os
-import subprocess
 import sys
-
+import os
 sys.path.append('..')  # add local cupstream2distro
 
-from c2dconfigutils.c2dconfigutils import (
-    dict_union, load_default_cfg, load_stack_cfg, set_logging)
-
+from c2dconfigutils.cu2dTrigger import cu2dTrigger
 
 BASEDIR = os.path.dirname(__file__)
-DEFAULT_PLUGIN_PATH = '/var/lib/jenkins/jenkins-launchpad-plugin/'
-
-
-def parse_arguments():
-    """ Parses the command line arguments
-
-    return args: the parsed arguments
-    """
-    parser = argparse.ArgumentParser(
-        description='''Trigger jenkins jobs ci and autolanding jobs from
-        stack config''')
-    parser.add_argument('-p', '--plugin-path', default=DEFAULT_PLUGIN_PATH,
-                        help='''specify the path to the
-                        jenkins-launchpad-plugin tools (default: %s)''' %
-                        DEFAULT_PLUGIN_PATH)
-    parser.add_argument('-d', '--debug', action='store_true', default=False,
-                        help='enable debug mode')
-    parser.add_argument('stackcfg',
-                        help='Path to a configuration file for the stack')
-    return parser.parse_args()
-
-
-def generate_trigger(project_name, project_config, job_type):
-    """ Generate a job trigger from a single project definition
-
-    :param project_name: name of the project as defined in the stack
-    :param project_config: dictionary containing the project definition
-    :return trigger: dictionary containing the job trigger details
-    """
-    options = []
-    name = '-'.join([project_name, job_type])
-    branch = project_config.get('target_branch', 'lp:' + project_name)
-    if job_type is 'autolanding':
-        options.append('--autoland')
-        if project_config['fasttrack']:
-            options.append('--fasttrack')
-    else:
-        options.append('--trigger-ci')
-
-    return {'name': name,
-            'branch': branch,
-            'options': options}
-
-
-def process_stack(stack):
-    """ Generate a list of job triggers from the projects within a stack
-
-    :param stack: dictionary with configuration of the stack
-    :return trigger_list: list of dicts containing the job trigger details
-    """
-    trigger_list = []
-    for project_name in stack['projects']:
-        project_config = copy.deepcopy(stack['ci_default'])
-        dict_union(project_config, stack['projects'][project_name])
-
-        for job_type in ['ci', 'autolanding']:
-            if project_config.get(job_type + '_template', None):
-                trigger_list.append(generate_trigger(project_name,
-                                                     project_config,
-                                                     job_type))
-    return trigger_list
-
-
-def trigger_job(plugin_path, trigger):
-    """ Performs the actual process call on the given trigger
-
-    :param plugin_path: path to the jenkins job launching plugin
-    :param trigger: dictionary containing the job trigger details
-    """
-    logging.debug('Triggering {}'.format(trigger['branch']))
-    trigger_call = [os.path.join(plugin_path, 'launchpadTrigger.py'),
-                    '--branch={}'.format(trigger['branch']),
-                    '--job={}'.format(trigger['name'])]
-    trigger_call.extend(trigger['options'])
-    logging.debug(' '.join(trigger_call))
-    try:
-        output = subprocess.check_call(trigger_call, cwd=plugin_path,
-                                       stderr=subprocess.STDOUT)
-        logging.debug(output)
-    except subprocess.CalledProcessError as e:
-        logging.error('Command %s returned non-zero exit status %d',
-                      e.cmd, e.returncode)
-        logging.error(output)
-
-
-def main():
-    args = parse_arguments()
-
-    set_logging(args.debug)
-    default_config = load_default_cfg(BASEDIR)
-    stackcfg = load_stack_cfg(args.stackcfg, default_config)
-    if not stackcfg:
-        logging.error('Stack configuration failed to load. Aborting!')
-    if stackcfg['projects']:
-        trigger_list = process_stack(stackcfg)
-
-    for trigger in trigger_list:
-        trigger_job(args.plugin_path, trigger)
-
 
 if __name__ == "__main__":
-    main()
+    command = cu2dTrigger()
+    sys.exit(command(BASEDIR))
