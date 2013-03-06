@@ -155,6 +155,16 @@ temp_dir=${local_archive_tmp}/${project}-al-${local_archive_pocket}-${BUILD_NUMB
         </hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
       </configs>
     </hudson.plugins.parameterizedtrigger.BuildTrigger>
+{% if postbuild_job %}
+    <hudson.tasks.BuildTrigger>
+        <childProjects>{{ postbuild_job }}</childProjects>
+        <threshold>
+            <name>SUCCESS</name>
+            <ordinal>0</ordinal>
+            <color>BLUE</color>
+        </threshold>
+    </hudson.tasks.BuildTrigger>
+{% endif %}
   </publishers>
   <buildWrappers/>
 </project>

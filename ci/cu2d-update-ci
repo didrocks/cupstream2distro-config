@@ -54,6 +54,7 @@ TEMPLATE_KEYS = [
 TEMPLATE_CONTEXT_KEYS = [
     'archive_artifacts',
     'build_timeout',
+    'postbuild_job',
     'configuration',
     'contact_email',
     'fasttrack',
