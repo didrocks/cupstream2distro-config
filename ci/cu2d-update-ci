@@ -59,6 +59,7 @@ TEMPLATE_CONTEXT_KEYS = [
     'contact_email',
     'fasttrack',
     'disabled',
+    'concurrent_jenkins_builds',
     'hook_source',
     'landing_job',
     'node_label',
