@@ -80,7 +80,7 @@ for card in ati intel nvidia; do
     fi
 
     AUTOPILOTRC={{ BASEDIR }}/default.autopilotrc
-    [ -e "{{ BASEDIR }}/{{ stack }}.autopilotrc" ] &amp;&amp; AUTOPILOTRC=$BASEDIR/{{ stack }}.autopilotrc
+    [ -e "{{ BASEDIR }}/{{ stack }}.autopilotrc" ] &amp;&amp; AUTOPILOTRC={{ BASEDIR }}/{{ stack }}.autopilotrc
     {{ BINDIR }}/cu2d-autopilot-report -C $AUTOPILOTRC $JUNIT
     RET=$?
 
