@@ -33,6 +33,9 @@ from c2dconfigutils import (
 CREDENTIALS_FILE = os.path.expanduser(
     '/var/lib/jenkins/.launchpad.credentials')
 
+LAUNCHPADLIB_DIR = os.path.expanduser('~/.launchpadlib-launchpadTrigger')
+
+
 class CheckStalledMPs(object):
     def parse_arguments(self):
         """ Parses the command line arguments
@@ -48,7 +51,6 @@ class CheckStalledMPs(object):
         parser.add_argument('stackcfg', nargs="+",
                             help='Path to a configuration file for the stack')
         return parser.parse_args()
-
 
     def check_branch(self, launchpad, branch, threshold):
         stalled = []
@@ -70,7 +72,7 @@ class CheckStalledMPs(object):
 
     def process_stacks(self, stacks, threshold, default_config_path):
         launchpad = Launchpad.login_with('check_stalled_mps', 'production',
-                                 credentials_file=CREDENTIALS_FILE)
+                                         credentials_file=CREDENTIALS_FILE)
         threshold = datetime.timedelta(
             hours=threshold / 60,
             minutes=threshold % 60)
@@ -87,15 +89,14 @@ class CheckStalledMPs(object):
                     target_branch = 'lp:' + project
                     if parameters and 'target_branch' in parameters:
                         target_branch = parameters['target_branch']
-                    stalled  = stalled + self.check_branch(launchpad,
-                                                           target_branch,
-                                                           threshold)
+                    stalled = stalled + self.check_branch(launchpad,
+                                                          target_branch,
+                                                          threshold)
         for message in stalled:
             logging.error(message)
         if stalled:
             return 1
         return 0
-
 
     def __call__(self, default_config_path):
         """Entry point for cu2d-check-stalled-mps """
@@ -104,4 +105,3 @@ class CheckStalledMPs(object):
         return self.process_stacks(args.stackcfg,
                                    args.threshold,
                                    default_config_path)
-

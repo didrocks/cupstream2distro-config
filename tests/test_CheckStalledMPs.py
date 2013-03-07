@@ -1,4 +1,4 @@
-from mock import (call, patch, MagicMock)
+from mock import (patch, MagicMock)
 from testtools import TestCase
 from testtools.matchers import Equals, StartsWith
 
@@ -64,19 +64,18 @@ class TestCheckBranch(TestCase):
         branch = 'lp:branch'
         unapproved_prerequisite_exists = lambda mp: False
         launchpad = self._create_lp_objects(
-            datetime.datetime.now() - 2*self.threshold)
+            datetime.datetime.now() - 2 * self.threshold)
         with patch(
             'c2dconfigutils.cu2dWatchDog.unapproved_prerequisite_exists',
                 unapproved_prerequisite_exists):
             ret = self.command.check_branch(launchpad, branch, self.threshold)
         self.assertThat(ret[0], StartsWith('http://link was created '))
 
-
     def test_check_branch_mp_too_old_but_with_prerequisite(self):
         branch = 'lp:branch'
         unapproved_prerequisite_exists = lambda mp: True
         launchpad = self._create_lp_objects(
-            datetime.datetime.now() - 2*self.threshold)
+            datetime.datetime.now() - 2 * self.threshold)
         with patch(
             'c2dconfigutils.cu2dWatchDog.unapproved_prerequisite_exists',
                 unapproved_prerequisite_exists):
@@ -92,7 +91,6 @@ class TestCheckStalledMps(TestCase):
             }
         }
     }
-
 
     def setUp(self):
         super(TestCheckStalledMps, self).setUp()
@@ -110,26 +108,24 @@ class TestCheckStalledMps(TestCase):
         self.load_default_cfg_patch.stop()
 
     def test_process_stacks_no_stalled(self):
-        load_stack_cfg = lambda x,y: self.stack_cfg
-        self.command.check_branch = lambda x,y,z: []
+        load_stack_cfg = lambda x, y: self.stack_cfg
+        self.command.check_branch = lambda x, y, z: []
         with patch('c2dconfigutils.cu2dWatchDog.load_stack_cfg',
-                      load_stack_cfg):
+                   load_stack_cfg):
             ret = self.command.process_stacks([1], 120, '')
             self.assertThat(ret, Equals(0))
 
     def test_process_stacks_one_stalled(self):
-        load_stack_cfg = lambda x,y: self.stack_cfg
-        self.command.check_branch = lambda x,y,z: ['stalled message']
+        load_stack_cfg = lambda x, y: self.stack_cfg
+        self.command.check_branch = lambda x, y, z: ['stalled message']
         with patch('c2dconfigutils.cu2dWatchDog.load_stack_cfg',
-                      load_stack_cfg):
+                   load_stack_cfg):
             ret = self.command.process_stacks([1], 120, '')
             self.assertThat(ret, Equals(1))
 
     def test_process_stacks_stackcfg_fails_to_load(self):
-        load_stack_cfg = lambda x,y: None
+        load_stack_cfg = lambda x, y: None
         with patch('c2dconfigutils.cu2dWatchDog.load_stack_cfg',
-                      load_stack_cfg):
+                   load_stack_cfg):
             ret = self.command.process_stacks([1], 120, '')
             self.assertThat(ret, Equals(0))
-
-
