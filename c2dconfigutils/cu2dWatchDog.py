@@ -33,7 +33,7 @@ from c2dconfigutils import (
 CREDENTIALS_FILE = os.path.expanduser(
     '/var/lib/jenkins/.launchpad.credentials')
 
-LAUNCHPADLIB_DIR = os.path.expanduser('~/.launchpadlib-launchpadTrigger')
+LAUNCHPADLIB_DIR = os.path.expanduser('~/.launchpadlib-cu2d-check-stalled-mps')
 
 
 class CheckStalledMPs(object):
@@ -72,7 +72,8 @@ class CheckStalledMPs(object):
 
     def process_stacks(self, stacks, threshold, default_config_path):
         launchpad = Launchpad.login_with('check_stalled_mps', 'production',
-                                         credentials_file=CREDENTIALS_FILE)
+                                         credentials_file=CREDENTIALS_FILE,
+                                         launchpadlib_dir=LAUNCHPADLIB_DIR)
         threshold = datetime.timedelta(
             hours=threshold / 60,
             minutes=threshold % 60)
