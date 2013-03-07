@@ -22,18 +22,16 @@ file
 # You should have received a copy of the GNU General Public License
 # along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-import copy
-import os
-import logging
-import sys
-import jinja2
-import jenkins
 import argparse
+import copy
+import logging
+import os
+import sys
 from textwrap import dedent
 
 from c2dconfigutils import (
     dict_union, load_jenkins_credentials, load_default_cfg, load_stack_cfg,
-    setup_job, set_logging)
+    get_jinja_environment, get_jenkins_handle, setup_job, set_logging)
 
 
 class JobParameter(object):
@@ -258,43 +256,14 @@ class UpdateCi(object):
                                    autolanding_dict, autolanding_template,
                                    build_template)
 
-    def update_jenkins(self, default_config_path, jenkins_config, stack,
-                       update=False):
+    def update_jenkins(self, jenkins_handle, jjenv, stack, update=False):
         """ Add/update jenkins jobs
 
-        :param jenkins_config: dictionary with the jenkins credentials
-        and config
         :param stack: dictionary with configuration of the stack
         :param update: Update existing jobs if true
 
         :return: True on success
         """
-        if not 'tmpldir' in stack:
-            tmpldir = os.path.join(default_config_path, 'jenkins-templates')
-        else:
-            tmpldir = stack['tmpldir']
-
-        tmpldir = os.path.abspath(tmpldir)
-        logging.debug('Templates directory: %s', tmpldir)
-
-        if not os.path.exists(tmpldir):
-            logging.error('Template directory doesn\'t exist')
-            return False
-
-        if not jenkins_config['url']:
-            logging.error("Please provide a URL to the jenkins instance.")
-            sys.exit(1)
-
-        jjenv = jinja2.Environment(loader=jinja2.FileSystemLoader(tmpldir))
-
-        if 'username' in jenkins_config:
-            jenkins_handle = jenkins.Jenkins(
-                jenkins_config['url'],
-                username=jenkins_config['username'],
-                password=jenkins_config['password'])
-        else:
-            jenkins_handle = jenkins.Jenkins(jenkins_config['url'])
-
         if stack['projects']:
             job_list = []
             self.process_stack(job_list, stack)
@@ -322,7 +291,13 @@ class UpdateCi(object):
             if not credentials:
                 logging.error('Credentials not found. Aborting!')
                 sys.exit(1)
-            if not self.update_jenkins(default_config_path, credentials,
+            jenkins_handle = get_jenkins_handle(credentials)
+            if not jenkins_handle:
+                logging.error('Could not acquire connection to jenkins. ' +
+                              'Aborting!')
+                sys.exit(1)
+            jjenv = get_jinja_environment(default_config_path, stackcfg)
+            if not self.update_jenkins(jenkins_handle, jjenv,
                                        stackcfg, args.update_jobs):
                 logging.error('Failed to configure jenkins jobs. Aborting!')
                 sys.exit(2)
