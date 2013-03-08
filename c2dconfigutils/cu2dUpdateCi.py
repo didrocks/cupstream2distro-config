@@ -178,10 +178,8 @@ class UpdateCi(object):
         :param job_config: dictionary containing the job definition
         :param job_template: template used to define the main job
         :param build_template: template used to define the build jobs
-            elif key == 'configurations':
-                for config in data:
-                    configurations.append(config)
         """
+        job_name = "-".join([project_name, job_type])
         build_list = []
         if 'configurations' in job_config:
             configurations = job_config.pop('configurations')
@@ -200,13 +198,16 @@ class UpdateCi(object):
 
                 build_name = '-'.join([project_name, config_name, job_type])
                 build_list.append(build_name)
-                job_list.append([build_name, template, ctx])
+                job_list.append({'name': build_name,
+                                 'template': template,
+                                 'ctx': ctx})
 
         ctx = self.process_project_config(project_name, job_config)
 
         ctx['builder_list'] = ','.join(build_list)
-        job_name = "-".join([project_name, job_type])
-        job_list.append([job_name, job_template, ctx])
+        job_list.append({'name': job_name,
+                         'template': job_template,
+                         'ctx': ctx})
 
     def process_stack(self, job_list, stack):
         """ Process the projects with the stack
@@ -268,8 +269,8 @@ class UpdateCi(object):
             job_list = []
             self.process_stack(job_list, stack)
             for job in job_list:
-                setup_job(jenkins_handle, jjenv, job[0], job[1], job[2],
-                          update)
+                setup_job(jenkins_handle, jjenv, job['name'], job['template'],
+                          job['ctx'], update)
         return True
 
     def __call__(self, default_config_path):
