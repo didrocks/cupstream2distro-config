@@ -41,23 +41,18 @@ class JobParameter(object):
         self.description = description
 
     def __repr__(self):
-        return self.__str__()
-
-    def __str__(self):
         return '<JobParameter %s: %s [%s]>' % (self.name, self.value,
                                                self.description)
+
+    def __eq__(self, other):
+        return (self.name == other.name and
+                self.value == other.value and
+                self.description == other.description)
 
 
 class UpdateCi(object):
     DEFAULT_CREDENTIALS = os.path.expanduser('~/.cu2d.cred')
     JENKINS_CI_CONFIG_NAME = 'ci-jenkins'
-
-    # Please keep list sorted
-    TEMPLATE_KEYS = [
-        'autolanding_template',
-        'ci_template',
-        'pbuilder_template',
-    ]
 
     # Please keep list sorted
     TEMPLATE_CONTEXT_KEYS = [
@@ -145,8 +140,6 @@ class UpdateCi(object):
                     DEFAULT_HOOK_LOCATION=self.DEFAULT_HOOK_LOCATION)
                 ctx['acquire_hook_script'] = hook_script
                 parameters[key] = data
-            elif key in self.TEMPLATE_KEYS:
-                pass
             elif key in self.TEMPLATE_CONTEXT_KEYS:
                 # These are added as ctx keys only
                 ctx[key] = data
