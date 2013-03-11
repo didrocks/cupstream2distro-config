@@ -2,6 +2,7 @@ ci/cu2d-trigger /usr/bin
 ci/cu2d-update-ci /usr/bin
 ci/config/* /usr/share/cupstream2distro-config/ci/config
 ci/jenkins-templates/* /usr/share/cupstream2distro-config/ci/jenkins-templates
+c2dconfigutils/c2dconfigutils.py /usr/lib/python2.7/dist-packages/c2dconfigutils
 daily-release/cu2d-update-stack /usr/bin
 daily-release/config/* /usr/share/cupstream2distro-config/daily-release/config
 daily-release/jenkins-templates/* /usr/share/cupstream2distro-config/daily-release/jenkins-templates

@@ -1,6 +1,9 @@
 #!/usr/bin/make -f
 %:
-	dh $@
+	dh $@ --with python2
 
 override_dh_auto_test:
 	pyruntest tests
+
+override_dh_install:
+	dh_install --fail-missing
