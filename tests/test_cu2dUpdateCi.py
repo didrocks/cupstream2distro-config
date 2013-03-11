@@ -1,7 +1,4 @@
-import copy
 from mock import (call, patch, MagicMock)
-import os
-import subprocess
 from testscenarios import TestWithScenarios
 from textwrap import dedent
 from unittest import TestCase
@@ -219,8 +216,7 @@ class TestUpdateJenkins(TestCase):
                 'xpathselect': {}}}
         calls = []
         calls.append(call('autopilot-ci', 'template'))
-        calls.append(call('autopilot-raring-amd64-autolanding',
-                           'template'))
+        calls.append(call('autopilot-raring-amd64-autolanding', 'template'))
         calls.append(call('autopilot-raring-386-autolanding', 'template'))
         calls.append(call('autopilot-autolanding', 'template'))
         calls.append(call('xpathselect-ci', 'template'))
@@ -364,4 +360,3 @@ class TestProcessStackIntegration(TestCase):
                                         child['ctx']['parameter_list']]
                         for p in parent_params:
                             self.assertIn(p, child_params)
-
