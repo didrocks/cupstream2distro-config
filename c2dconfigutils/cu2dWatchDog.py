@@ -30,8 +30,7 @@ from c2dconfigutils import (
     load_default_cfg, load_stack_cfg, set_logging,
     unapproved_prerequisite_exists)
 
-CREDENTIALS_FILE = os.path.expanduser(
-    '/var/lib/jenkins/.launchpad.credentials')
+CREDENTIALS_FILE = os.path.expanduser('~/.launchpad.credentials')
 
 LAUNCHPADLIB_DIR = os.path.expanduser('~/.launchpadlib-cu2d-check-stalled-mps')
 
@@ -74,9 +73,7 @@ class CheckStalledMPs(object):
         launchpad = Launchpad.login_with('check_stalled_mps', 'production',
                                          credentials_file=CREDENTIALS_FILE,
                                          launchpadlib_dir=LAUNCHPADLIB_DIR)
-        threshold = datetime.timedelta(
-            hours=threshold / 60,
-            minutes=threshold % 60)
+        threshold = datetime.timedelta(minutes=threshold)
         stalled = []
 
         for stack in stacks:
