@@ -1,0 +1,24 @@
+Source: cupstream2distro-config
+Priority: extra
+Maintainer: Francis Ginther <francis.ginther@canonical.com>
+Build-Depends: debhelper (>= 8.0.0),
+               python-mock,
+               python-pyruntest,
+               python-testscenarios,
+               python-testtools,
+               python-yaml,
+Standards-Version: 3.9.3
+Section: misc
+
+Package: cupstream2distro-config
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         python-minimal,
+         python-jenkins,
+         python-jinja2,
+         python-yaml,
+Description: Scripts for cupstream 2 distro job management
+ Package contains scripts to generate and trigger jenkins jobs for continuous
+ integration, autolanding and release to distro. Jobs are based on project
+ configuration details defined in the stack files.
