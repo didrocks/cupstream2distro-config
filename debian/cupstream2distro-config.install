@@ -1,5 +1,0 @@
-ci/config/* /usr/share/cupstream2distro-config/ci/config
-ci/jenkins-templates/* /usr/share/cupstream2distro-config/ci/jenkins-templates
-daily-release/config/* /usr/share/cupstream2distro-config/daily-release/config
-daily-release/jenkins-templates/* /usr/share/cupstream2distro-config/daily-release/jenkins-templates
-stacks/* /etc/cupstream2distro-config/stacks
