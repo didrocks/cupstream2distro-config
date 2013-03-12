@@ -161,6 +161,8 @@ def update_jenkins(jkcfg, stack, release, update=False):
 
             ctx['opts'] = '-s %s -p %s -b %s -n %s' % (
                 stack['series'], stack['ppa'], lpb, srcname)
+            if stack['dest'] != 'ubuntu':
+		ctx['opts']  += ' -d {}'.format(stack['dest'])
             ctx['projectname'] = srcname
             setup_job(jkh, jjenv, jobname, TEMPLATES['prepare-project'],
                       ctx, update)
@@ -196,6 +198,8 @@ def update_jenkins(jkcfg, stack, release, update=False):
     subjobs['jobpublish'] = jobname
     ctx = dict(ctxbase)
     ctx['opts'] = '-s %s -p %s' % (stack['series'], stack['ppa'])
+    if stack['dest'] != 'ubuntu':
+        ctx['opts']  += ' -d {}'.format(stack['dest'])
     setup_job(jkh, jjenv, jobname, TEMPLATES['publish'],
               ctx, update)
 
