@@ -3,7 +3,7 @@
 	dh $@ --with python2
 
 override_dh_auto_test:
-	pyruntest -f xml -o test_results.xml -c -cf xml -co coverage.xml tests
+	pyruntest -f xml -o test_results.xml -c -cf xml -co coverage.xml -ce '/usr*,tests*'tests
 
 override_dh_install:
 	dh_install --fail-missing
