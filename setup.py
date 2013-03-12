@@ -11,7 +11,7 @@ setup(
     test_suite='tests',
     scripts=[
         'ci/cu2d-trigger',
-        'cu2d-update-ci',
+        'ci/cu2d-update-ci',
         'daily-release/cu2d-update-stack'
     ],
 )
