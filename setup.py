@@ -19,7 +19,7 @@ def get_data_files():
         ('/usr/share/cupstream2distro-config/daily-release/jenkins-templates',
          get_files('daily-release/jenkins-templates/')),
     ]
-    config_path = '/etc/cupstream2distro-config/stacks'
+    config_path = '/etc/cupstream2distro-config'
     for dir in os.listdir('stacks'):
         stack_dir = os.path.join('stacks', dir)
         result.append((
