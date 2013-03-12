@@ -86,11 +86,12 @@ def setup_branch(stack):
                 sys.exit(1)
 
 
-def update_jenkins(jkcfg, stack, update=False):
+def update_jenkins(jkcfg, stack, release, update=False):
     """ Add/update jenkins jobs
 
     :param jkcfg: dictionary with the credentials
     :param stack: dictionary with configuration of the stack
+    :param release: Release name used by jenkins for the stack
     :param update: Update existing jobs if true
 
     :return: True on success
@@ -120,11 +121,11 @@ def update_jenkins(jkcfg, stack, update=False):
     else:
         jkh = jenkins.Jenkins(jkcfg['url'])
 
-    basename = [PREFIX, stack['name'], stack['release']]
+    basename = [PREFIX, stack['name'], release]
 
     ctxbase = {
         'stack': stack['name'],
-        'release': stack['release'],
+        'release': release,
         'BINDIR': stack['BINDIR'],
         'BASEDIR': stack['BASEDIR']
     }
@@ -194,8 +195,7 @@ def update_jenkins(jkcfg, stack, update=False):
     jobname = "-".join(basename + ['3.0publish'])
     subjobs['jobpublish'] = jobname
     ctx = dict(ctxbase)
-    ctx['opts'] = '-s %s -p %s -j cu2d-%s-%s' % (stack['series'], stack['ppa'],
-                                        stack['name'], stack['release'])
+    ctx['opts'] = '-s %s -p %s' % (stack['series'], stack['ppa'])
     setup_job(jkh, jjenv, jobname, TEMPLATES['publish'],
               ctx, update)
 
@@ -221,7 +221,9 @@ def main():
             'for a stack.',
         epilog = """Example:
 To update the indicator stack run the following command:
-    $ ./cu2d-update-stack -dU indicators-head.cfg
+    $ ./cu2d-update-stack -dU head/indicators.cfg
+
+    The parent directory is the stack release name
         """,
         formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('-C', '--credentials', metavar='CREDENTIALFILE',
@@ -249,6 +251,7 @@ To update the indicator stack run the following command:
 
     default_config = load_default_cfg(BASEDIR)
     stackcfg = load_stack_cfg(args.stackcfg, default_config)
+    release = os.path.dirname(os.path.abspath(args.stackcfg)).split(os.path.sep)[-1]
     if not stackcfg:
         logging.error('Stack configuration failed to load. Aborting!')
 
@@ -263,7 +266,7 @@ To update the indicator stack run the following command:
         if not credentials:
             logging.error('Credentials not found. Aborting!')
             sys.exit(1)
-        if not update_jenkins(credentials, stackcfg, args.update_jobs):
+        if not update_jenkins(credentials, stackcfg, release, args.update_jobs):
             logging.error('Failed to configure jenkins jobs. Aborting!')
             sys.exit(2)
 

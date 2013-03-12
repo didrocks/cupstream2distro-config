@@ -19,6 +19,11 @@
           <defaultValue>{{ parameter.value }}</defaultValue>
         </hudson.model.StringParameterDefinition>
 {% endfor %}
+        <hudson.model.BooleanParameterDefinition>
+          <name>use_description_for_commit</name>
+          <description>If launchpad commit message is not set in Merge Proposal and you use &quot;usr_description_for_commit&quot; then the description will be used for the merge message (i.e. you will see launchpad description in your bzr log).</description>
+          <defaultValue>{{ use_description_for_commit }}</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
