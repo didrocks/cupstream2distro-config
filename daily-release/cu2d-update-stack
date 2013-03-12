@@ -195,8 +195,7 @@ def update_jenkins(jkcfg, stack, release, update=False):
     jobname = "-".join(basename + ['3.0publish'])
     subjobs['jobpublish'] = jobname
     ctx = dict(ctxbase)
-    ctx['opts'] = '-s %s -p %s -j cu2d-%s-%s' % (stack['series'], stack['ppa'],
-                                        stack['name'], release)
+    ctx['opts'] = '-s %s -p %s' % (stack['series'], stack['ppa'])
     setup_job(jkh, jjenv, jobname, TEMPLATES['publish'],
               ctx, update)
 
