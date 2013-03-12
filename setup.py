@@ -5,7 +5,14 @@ from setuptools import find_packages
 import os
 
 def get_files(directory):
-    return [os.path.join(directory, f) for f in os.listdir(directory)]
+    result = []
+    for name in os.listdir(directory):
+        full_name = os.path.join(directory, name)
+        if os.path.isdir(full_name):
+            result = result + get_files(full_name)
+        else:
+            result.append(full_name)
+    return result
 
 setup(
     name='cupstream2distro-config',
