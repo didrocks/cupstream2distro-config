@@ -39,5 +39,5 @@ setup(
         'ci/cu2d-update-ci',
         'daily-release/cu2d-update-stack'
     ],
-    data_files=get_data_files,
+    data_files=get_data_files(),
 )
