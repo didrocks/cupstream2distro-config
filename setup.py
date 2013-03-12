@@ -24,7 +24,7 @@ def get_data_files():
         stack_dir = os.path.join('stacks', dir)
         result.append((
             os.path.join(config_path, stack_dir),
-            os.listdir(stack_dir)
+            get_files(stack_dir)
         ))
     return result
 
