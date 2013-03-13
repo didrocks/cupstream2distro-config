@@ -124,8 +124,8 @@ class TestGenerateJobs(TestWithScenarios, TestCase):
     def test_generate_jobs_names(self):
         config = {
             'configurations': {
-                'raring-amd64': {},
-                'raring-i386': {}}}
+                'raring-amd64': {'node_label': 'pbuilder'},
+                'raring-i386': {'node_label': 'pbuilder'}}}
         expected = ['foo-raring-amd64-ci',
                     'foo-raring-i386-ci',
                     'foo-ci']
@@ -138,8 +138,8 @@ class TestGenerateJobs(TestWithScenarios, TestCase):
     def test_generate_jobs_templates(self):
         config = {
             'configurations': {
-                'raring-amd64': {},
-                'raring-i386': {}}}
+                'raring-amd64': {'node_label': 'pbuilder'},
+                'raring-i386': {'node_label': 'pbuilder'}}}
         expected = ['build.xml.tmpl',
                     'build.xml.tmpl',
                     'ci.xml.tmpl']
@@ -168,8 +168,8 @@ class TestGenerateJobs(TestWithScenarios, TestCase):
     def test_generate_jobs_builder_list(self):
         config = {
             'configurations': {
-                'raring-amd64': {},
-                'raring-i386': {}}}
+                'raring-amd64': {'node_label': 'pbuilder'},
+                'raring-i386': {'node_label': 'pbuilder'}}}
         expected = 'foo-raring-amd64-ci,foo-raring-i386-ci'
         job_list = []
         self.update_ci.generate_jobs(job_list, 'foo', 'ci', config,

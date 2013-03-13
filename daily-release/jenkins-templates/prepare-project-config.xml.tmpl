@@ -37,7 +37,7 @@ fi
 # WS Clean-up
 rm -f *xml
 
-WRKDIR={{ BASEDIR }}/work/{{ stack }}-{{ release }}
+WRKDIR={{ BASEDIR }}/work/{{ release }}/{{ stack }}
 OPTS="{{ opts }}"
 
 cd $WRKDIR
@@ -45,7 +45,7 @@ rm -Rf {{ projectname }}_* *_{{ projectname }}_* {{ projectname }} ubuntu/{{ pro
 {{ BINDIR }}/prepare-package $OPTS
 RC=$?
 
-cp -a *_{{ projectname }}_*xml $WORKSPACE/</command>
+cp -a *_{{ projectname }}*xml $WORKSPACE/</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>

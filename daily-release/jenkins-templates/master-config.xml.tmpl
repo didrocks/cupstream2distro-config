@@ -39,7 +39,7 @@
     <hudson.tasks.Shell>
       <command>#!/bin/bash -e
 export LANG=en_US.UTF-8
-WRKDIR={{ BASEDIR }}/work/{{ stack }}-{{ release }}
+WRKDIR={{ BASEDIR }}/work/{{ release }}/{{ stack }}
 BAKDIR=${WRKDIR}.bak
 
 if [ -z &quot;$REBUILD_ONLY&quot; -a "$CHECK_WITH_WHOLE_PPA" != "true" ]; then

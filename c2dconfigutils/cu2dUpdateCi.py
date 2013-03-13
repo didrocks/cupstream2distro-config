@@ -76,20 +76,20 @@ class UpdateCi(object):
     ]
 
     DEFAULT_HOOK_LOCATION = '/tmp/$JOB_NAME-hooks'
-    ACQUIRE_HOOK_SOURCE_TEMPLATE = "jenkins-templates/acquire-hooks.sh.tmpl"
+    ACQUIRE_HOOK_SOURCE_TEMPLATE = 'jenkins-templates/acquire-hooks.sh.tmpl'
 
     def __init__(self):
         self.default_config_path = None
 
     def parse_arguments(self):
         parser = argparse.ArgumentParser(
-            description='Create/Update the configuration of the Jenkins ci '
-            'and autolanding jobs for a stack.',
-            epilog=dedent("""\
+            description='''Create/Update the configuration of the Jenkins ci
+            and autolanding jobs for a stack.''',
+            epilog=dedent('''\
                 Example:
                 To update the indicator stack run the following command:
                     $ ./cu2d-update-ci -dU ./etc/indicators-head.cfg
-                """),
+                '''),
             formatter_class=argparse.RawTextHelpFormatter)
         parser.add_argument('-C', '--credentials', metavar='CREDENTIALFILE',
                             default=self.DEFAULT_CREDENTIALS,
@@ -185,6 +185,10 @@ class UpdateCi(object):
                 build_config['configuration'] = config_name
 
                 data = copy.deepcopy(configurations[config_name])
+                # if the configuration doesn't contain any data it means
+                # the user doesn't want any job for it
+                if not data:
+                    continue
                 if 'template' in data:
                     template = data.pop('template')
                 else:
@@ -257,6 +261,8 @@ class UpdateCi(object):
     def update_jenkins(self, jenkins_handle, jjenv, stack, update=False):
         """ Add/update jenkins jobs
 
+        :param jenkins_handle: jenkins access handle
+        :param jjenv: jinja2 template environment handle
         :param stack: dictionary with configuration of the stack
         :param update: Update existing jobs if true
 
@@ -298,8 +304,8 @@ class UpdateCi(object):
                               'Aborting!')
                 return 1
             jjenv = get_jinja_environment(default_config_path, stackcfg)
-            if not self.update_jenkins(jenkins_handle, jjenv,
-                                       stackcfg, args.update_jobs):
+            if not self.update_jenkins(jenkins_handle, jjenv, stackcfg,
+                                       args.update_jobs):
                 logging.error('Failed to configure jenkins jobs. Aborting!')
                 return 2
         return 0
