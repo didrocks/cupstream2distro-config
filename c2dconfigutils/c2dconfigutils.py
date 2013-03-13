@@ -2,7 +2,6 @@ import logging
 import os
 import urllib2
 import yaml
-import re
 
 
 def dict_union(result_dict, other_dict):
