@@ -20,21 +20,11 @@ def get_ci_base_job_name(name, config):
     # first the easy case when there is no target_branch
     if 'target_branch' not in config:
         return name
-    # check if the target_branch is in a lp:$project format:
-    match = re.match('^lp:([^/]+)$', config['target_branch'])
-    if match:
-        return match.group(1)
-    # then check if the branch is in a lp:$project/$series format
-    match = re.match('^lp:([^/]+)/([^/]+)$', config['target_branch'])
-    if match:
-        return "{}-{}".format(match.group(1), match.group(2))
-    # now check the last known case: lp:~$team-name/$project/$branch-name
-    match = re.match('^lp:~([^/]+)/([^/]+)/([^/]+)$', config['target_branch'])
-    if match:
-        return "{}-{}-{}".format(match.group(2),
-                                 match.group(1),
-                                 match.group(3))
-    return None
+    if config['target_branch'].startswith('lp:'):
+        base_name = config['target_branch'].lstrip('lp:').replace('/', '-')
+        return base_name.lstrip('~')
+    else:
+        return None
 
 
 def unapproved_prerequisite_exists(mp):
