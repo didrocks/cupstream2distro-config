@@ -15,6 +15,17 @@ def dict_union(result_dict, other_dict):
             dict_union(subdict, val)
 
 
+def get_ci_base_job_name(name, config):
+    # first the easy case when there is no target_branch
+    if 'target_branch' not in config:
+        return name
+    if config['target_branch'].startswith('lp:'):
+        base_name = config['target_branch'].lstrip('lp:').replace('/', '-')
+        return base_name.lstrip('~')
+    else:
+        return None
+
+
 def unapproved_prerequisite_exists(mp):
     """check if there is an unapproved branch for a given merge proposal """
     prereq = mp.prerequisite_branch
