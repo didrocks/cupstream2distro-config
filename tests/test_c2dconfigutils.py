@@ -72,6 +72,10 @@ class TestGetCiBaseJobName(TestWithScenarios, TestCase):
          {'name': 'unity',
           'config': {'target_branch': 'lp:unity'},
           'expected_result': 'unity'}),
+        ('project_name_different_than_trunk',
+         {'name': 'compiz',
+          'config': {'target_branch': 'lp:unity'},
+          'expected_result': 'compiz'}),
         ('target_branch_is_series_number',
          {'name': 'unity',
           'config': {'target_branch': 'lp:unity/7.0'},
@@ -86,8 +90,13 @@ class TestGetCiBaseJobName(TestWithScenarios, TestCase):
           'expected_result': 'unity-unity-team-phablet'}),
         ('target_branch_is_codename',
          {'name': 'codename',
-          'config': {'target_branch': 'lp:~code-team/codename/phablet'},
+          'config': {'target_branch': 'lp:~code-team/other_project/phablet'},
           'expected_result': 'codename-code-team-phablet'}),
+        ('target_branch_is_garbage',
+         {'name': 'codename',
+          'config': {'target_branch': '~code-team/other_project/phablet'},
+          'expected_result': None}),
+
     ]
 
     def test_get_ci_base_job_name(self):

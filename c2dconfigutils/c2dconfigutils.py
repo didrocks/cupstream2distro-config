@@ -2,6 +2,7 @@ import logging
 import os
 import urllib2
 import yaml
+import re
 
 
 def dict_union(result_dict, other_dict):
@@ -14,8 +15,25 @@ def dict_union(result_dict, other_dict):
             subdict = result_dict.setdefault(key, {})
             dict_union(subdict, val)
 
+
 def get_ci_base_job_name(name, config):
-    return ''
+    # first the easy case when there is no target_branch
+    if 'target_branch' not in config:
+        return name
+    # check if the target_branch is in a lp:$project format:
+    match = re.match('^lp:([^/]+)$', config['target_branch'])
+    if match:
+        return name
+    # then check if the branch is in a lp:$project/$series format
+    match = re.match('^lp:([^/]+)/([^/]+)$', config['target_branch'])
+    if match:
+        return "{}-{}".format(name, match.group(2))
+    # now check the last known case: lp:~$team-name/$project/$branch-name
+    match = re.match('^lp:~([^/]+)/([^/]+)/([^/]+)$', config['target_branch'])
+    if match:
+        return "{}-{}-{}".format(name, match.group(1), match.group(3))
+    return None
+
 
 def unapproved_prerequisite_exists(mp):
     """check if there is an unapproved branch for a given merge proposal """
