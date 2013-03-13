@@ -96,6 +96,35 @@ class TestProcessStack(TestWithScenarios, TestCase):
         self.assertEqual(self.expected_result, ret)
 
 
+class TestGetLockName(TestWithScenarios, TestCase):
+    scenarios = [
+        ('head-unity',
+         {'stack': '../head/unity.cfg',
+          'expected': 'head-unity.cfg'}),
+        ('experimental-unity',
+         {'stack': '../experimental/unity.cfg',
+          'expected': 'experimental-unity.cfg'}),
+        ('absolute-path',
+         {'stack': '/home/user/config/experimental/unity.cfg',
+          'expected': 'experimental-unity.cfg'}),
+        ('same-directory',
+         {'stack': 'unity.cfg',
+          'expected': 'unity.cfg'}),
+        ('same-directory-explicit',
+         {'stack': './unity.cfg',
+          'expected': 'unity.cfg'}),
+        ('relative-path',
+         {'stack': 'experimental/unity.cfg',
+          'expected': 'experimental-unity.cfg'}),
+    ]
+
+    def setUp(self):
+        self.jt = JobTrigger()
+
+    def test_get_lock_name(self):
+        self.assertEqual(self.jt._get_lock_name(self.stack), self.expected)
+
+
 class TestTriggerJob(TestWithScenarios, TestCase):
     ci_default = {'ci_template': 'ci.xml.tmpl',
                   'autolanding_template': 'autolanding.xml.tmpl'}
@@ -113,11 +142,12 @@ class TestTriggerJob(TestWithScenarios, TestCase):
         plugin_path = '/var/lib/jenkins/plugin'
         plugin = os.path.join(plugin_path, 'launchpadTrigger.py')
         calls = [
-            call([plugin, '--branch=lp:foo', '--job=foo-ci', '--trigger-ci'],
+            call([plugin, '--lock-name=lock', '--branch=lp:foo',
+                  '--job=foo-ci', '--trigger-ci'],
                  cwd=plugin_path,
                  stderr=subprocess.STDOUT)]
         with patch('subprocess.check_call', check_call):
-            self.jt.trigger_job(plugin_path, trigger)
+            self.jt.trigger_job(plugin_path, trigger, 'lock')
             check_call.assert_has_calls(calls)
 
     def test_trigger_job_error(self):
@@ -131,5 +161,5 @@ class TestTriggerJob(TestWithScenarios, TestCase):
         plugin_path = '/var/lib/jenkins/plugin'
         with patch('subprocess.check_call', check_call):
             with patch("logging.error", logging_error):
-                self.jt.trigger_job(plugin_path, trigger)
+                self.jt.trigger_job(plugin_path, trigger, 'lock')
                 logging_error.assert_called_once()

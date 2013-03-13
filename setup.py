@@ -8,6 +8,7 @@ import os
 def get_files(directory):
     return [os.path.join(directory, f) for f in os.listdir(directory)]
 
+
 def get_data_files():
     result = [
         ('/usr/share/cupstream2distro-config/ci/config',
