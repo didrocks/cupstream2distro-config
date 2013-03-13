@@ -1,6 +1,6 @@
 from testscenarios import TestWithScenarios
 from c2dconfigutils.c2dconfigutils import (
-    dict_union, unapproved_prerequisite_exists)
+    dict_union, unapproved_prerequisite_exists, get_ci_base_job_name)
 from testtools import TestCase
 from testtools.matchers import Equals
 from mock import MagicMock
@@ -60,6 +60,41 @@ class TestDictUnion(TestWithScenarios, TestCase):
         dict_union(self.result_dict, self.other_dict)
         # Then
         self.assertThat(self.result_dict, Equals(self.expected_result))
+
+
+class TestGetCiBaseJobName(TestWithScenarios, TestCase):
+    scenarios = [
+        ('no_target_branch',
+         {'name': 'unity',
+          'config': {},
+          'expected_result': 'unity'}),
+        ('target_branch_is_trunk',
+         {'name': 'unity',
+          'config': {'target_branch': 'lp:unity'},
+          'expected_result': 'unity'}),
+        ('target_branch_is_series_number',
+         {'name': 'unity',
+          'config': {'target_branch': 'lp:unity/7.0'},
+          'expected_result': 'unity-7.0'}),
+        ('target_branch_is_series_name',
+         {'name': 'unity',
+          'config': {'target_branch': 'lp:unity/phablet'},
+          'expected_result': 'unity-phablet'}),
+        ('target_branch_is_in_team',
+         {'name': 'unity',
+          'config': {'target_branch': 'lp:~unity-team/unity/phablet'},
+          'expected_result': 'unity-unity-team-phablet'}),
+        ('target_branch_is_codename',
+         {'name': 'codename',
+          'config': {'target_branch': 'lp:~code-team/codename/phablet'},
+          'expected_result': 'codename-code-team-phablet'}),
+    ]
+
+    def test_get_ci_base_job_name(self):
+        # Given/When
+        base_job_name = get_ci_base_job_name(self.name, self.config)
+        # Then
+        self.assertThat(base_job_name, Equals(self.expected_result))
 
 
 class TestUnapprovedPrerequisiteExists(TestCase):

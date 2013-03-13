@@ -14,6 +14,8 @@ def dict_union(result_dict, other_dict):
             subdict = result_dict.setdefault(key, {})
             dict_union(subdict, val)
 
+def get_ci_base_job_name(name, config):
+    return ''
 
 def unapproved_prerequisite_exists(mp):
     """check if there is an unapproved branch for a given merge proposal """
