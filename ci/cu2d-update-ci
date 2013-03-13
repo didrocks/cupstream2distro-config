@@ -25,11 +25,15 @@ file
 
 import sys
 import os
-sys.path.append('..')  # add local cupstream2distro
+
+BASEDIR = os.path.dirname(__file__)
+
+# add local c2configutils
+if os.path.isdir(os.path.join(BASEDIR, '../c2dconfigutils')):
+    sys.path.insert(0, os.path.join(BASEDIR, '..'))
 
 from c2dconfigutils.cu2dUpdateCi import UpdateCi
 
-BASEDIR = os.path.dirname(__file__)
 
 if __name__ == "__main__":
     command = UpdateCi()

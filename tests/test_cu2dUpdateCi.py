@@ -45,6 +45,7 @@ class TestAddParameter(TestCase):
 class TestProcessProjectConfig(TestCase):
     def setUp(self):
         self.update_ci = UpdateCi()
+        self.update_ci.default_config_path = 'default'
 
     def test_project_config_implied_target_branch(self):
         config = {}

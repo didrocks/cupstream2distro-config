@@ -26,7 +26,6 @@ import argparse
 import copy
 import logging
 import os
-import sys
 from textwrap import dedent
 
 from c2dconfigutils import (
@@ -78,6 +77,9 @@ class UpdateCi(object):
 
     DEFAULT_HOOK_LOCATION = '/tmp/$JOB_NAME-hooks'
     ACQUIRE_HOOK_SOURCE_TEMPLATE = "jenkins-templates/acquire-hooks.sh.tmpl"
+
+    def __init__(self):
+        self.default_config_path = None
 
     def parse_arguments(self):
         parser = argparse.ArgumentParser(
@@ -135,7 +137,9 @@ class UpdateCi(object):
             if key == 'hook_source':
                 ctx['hook_location'] = self.DEFAULT_HOOK_LOCATION
                 hook_script = open(
-                    self.ACQUIRE_HOOK_SOURCE_TEMPLATE, 'r').read()
+                    os.path.join(self.default_config_path,
+                                 self.ACQUIRE_HOOK_SOURCE_TEMPLATE),
+                    'r').read()
                 hook_script = hook_script.format(
                     DEFAULT_HOOK_LOCATION=self.DEFAULT_HOOK_LOCATION)
                 ctx['acquire_hook_script'] = hook_script
@@ -268,6 +272,8 @@ class UpdateCi(object):
 
     def __call__(self, default_config_path):
         """Entry point for cu2d-update-ci"""
+        self.default_config_path = default_config_path
+
         args = self.parse_arguments()
         set_logging(args.debug)
 
@@ -275,6 +281,7 @@ class UpdateCi(object):
         stackcfg = load_stack_cfg(args.stackcfg, default_config)
         if not stackcfg:
             logging.error('Stack configuration failed to load. Aborting!')
+            return 1
 
         credentials = None
         if args.credentials:
@@ -284,14 +291,15 @@ class UpdateCi(object):
                 self.JENKINS_CI_CONFIG_NAME)
             if not credentials:
                 logging.error('Credentials not found. Aborting!')
-                sys.exit(1)
+                return 1
             jenkins_handle = get_jenkins_handle(credentials)
             if not jenkins_handle:
                 logging.error('Could not acquire connection to jenkins. ' +
                               'Aborting!')
-                sys.exit(1)
+                return 1
             jjenv = get_jinja_environment(default_config_path, stackcfg)
             if not self.update_jenkins(jenkins_handle, jjenv,
                                        stackcfg, args.update_jobs):
                 logging.error('Failed to configure jenkins jobs. Aborting!')
-                sys.exit(2)
+                return 2
+        return 0

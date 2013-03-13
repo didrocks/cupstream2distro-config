@@ -228,6 +228,7 @@ To update the indicator stack run the following command:
     stackcfg = load_stack_cfg(args.stackcfg, default_config)
     if not stackcfg:
         logging.error('Stack configuration failed to load. Aborting!')
+        sys.exit(1)
 
     if not args.no_setupbranch:
         setup_branch(stackcfg)
