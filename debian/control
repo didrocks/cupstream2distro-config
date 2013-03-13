@@ -11,6 +11,7 @@ Build-Depends: debhelper (>= 9),
                python-yaml,
                python-setuptools,
                python-junitxml,
+               python-coverage,
                python-launchpadlib,
 Standards-Version: 3.9.4
 Homepage: https://launchpad.net/cupstream2distro-config
