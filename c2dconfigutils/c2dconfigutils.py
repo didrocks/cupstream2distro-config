@@ -23,15 +23,17 @@ def get_ci_base_job_name(name, config):
     # check if the target_branch is in a lp:$project format:
     match = re.match('^lp:([^/]+)$', config['target_branch'])
     if match:
-        return name
+        return match.group(1)
     # then check if the branch is in a lp:$project/$series format
     match = re.match('^lp:([^/]+)/([^/]+)$', config['target_branch'])
     if match:
-        return "{}-{}".format(name, match.group(2))
+        return "{}-{}".format(match.group(1), match.group(2))
     # now check the last known case: lp:~$team-name/$project/$branch-name
     match = re.match('^lp:~([^/]+)/([^/]+)/([^/]+)$', config['target_branch'])
     if match:
-        return "{}-{}-{}".format(name, match.group(1), match.group(3))
+        return "{}-{}-{}".format(match.group(2),
+                                 match.group(1),
+                                 match.group(3))
     return None
 
 
