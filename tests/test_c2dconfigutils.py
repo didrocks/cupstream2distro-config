@@ -100,7 +100,6 @@ class TestGetCiBaseJobName(TestWithScenarios, TestCase):
          {'name': 'codename',
           'config': {'target_branch': '~code-team/other_project/phablet'},
           'expected_result': None}),
-
     ]
 
     def test_get_ci_base_job_name(self):
