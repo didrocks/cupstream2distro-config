@@ -1,0 +1,31 @@
+Source: cupstream2distro-config
+Section: misc
+Priority: optional
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+XSBC-Original-Maintainer: Francis Ginther <francis.ginther@canonical.com>
+Build-Depends: debhelper (>= 9),
+               python-mock,
+               python-pyruntest,
+               python-testscenarios,
+               python-testtools,
+               python-yaml,
+               python-setuptools,
+               python-junitxml,
+               python-coverage,
+               python-launchpadlib,
+Standards-Version: 3.9.4
+Homepage: https://launchpad.net/cupstream2distro-config
+
+Package: cupstream2distro-config
+Architecture: all
+Depends: ${misc:Depends},
+         ${python:Depends},
+         python-minimal,
+         python-jenkins,
+         python-jinja2,
+         python-yaml,
+         python-launchpadlib,
+Description: Scripts for cupstream 2 distro job management
+ Package contains scripts to generate and trigger jenkins jobs for continuous
+ integration, autolanding and release to distro. Jobs are based on project
+ configuration details defined in the stack files.

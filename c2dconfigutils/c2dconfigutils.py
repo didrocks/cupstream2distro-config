@@ -15,6 +15,38 @@ def dict_union(result_dict, other_dict):
             dict_union(subdict, val)
 
 
+def get_ci_base_job_name(name, config):
+    # first the easy case when there is no target_branch
+    if 'target_branch' not in config:
+        return name
+    if config['target_branch'].startswith('lp:'):
+        base_name = config['target_branch'].lstrip('lp:').replace('/', '-')
+        return base_name.lstrip('~')
+    else:
+        return None
+
+
+def unapproved_prerequisite_exists(mp):
+    """check if there is an unapproved branch for a given merge proposal """
+    prereq = mp.prerequisite_branch
+    target_branch = mp.target_branch
+    if prereq:
+        #x is a merge-proposal object
+        merges = [x for x in prereq.landing_targets
+                  if x.target_branch.web_link == target_branch.web_link and
+                  x.queue_status != u'Superseded']
+        if len(merges) == 0:
+            return True
+        else:
+            for merge in merges:
+                #lets make our life simpler here and lets assume
+                #all the MP needs to be merged even though in reality
+                #their target branch might differ
+                if merge.queue_status != u'Merged':
+                    return True
+    return False
+
+
 def load_jenkins_credentials(path, jenkins_name):
     """ Load Credentials from credentials configuration file """
     if not os.path.exists(path):

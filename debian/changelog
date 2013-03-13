@@ -1,0 +1,5 @@
+cupstream2distro-config (0.1) raring; urgency=low
+
+  * Initial release.
+
+ -- Francis Ginther <francis.ginther@canonical.com>  Mon, 11 Mar 2013 11:37:27 -0500
