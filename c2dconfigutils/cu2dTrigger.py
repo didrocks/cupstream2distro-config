@@ -92,7 +92,7 @@ class JobTrigger(object):
                                                               job_type))
         return trigger_list
 
-    def trigger_job(self, plugin_path, trigger):
+    def trigger_job(self, plugin_path, trigger, lock_name):
         """ Performs the actual process call on the given trigger
 
         :param plugin_path: path to the jenkins job launching plugin
@@ -100,6 +100,7 @@ class JobTrigger(object):
         """
         logging.debug('Triggering {}'.format(trigger['branch']))
         trigger_call = [os.path.join(plugin_path, 'launchpadTrigger.py'),
+                        '--lock-name={}'.format(lock_name),
                         '--branch={}'.format(trigger['branch']),
                         '--job={}'.format(trigger['name'])]
         trigger_call.extend(trigger['options'])
@@ -111,6 +112,16 @@ class JobTrigger(object):
         except subprocess.CalledProcessError as e:
             logging.error('Command %s returned non-zero exit status %d',
                           e.cmd, e.returncode)
+
+    def _get_lock_name(self, stack):
+        stack = os.path.normpath(stack)
+        result = ''
+        head, result = os.path.split(stack)
+        if head:
+            head, tail = os.path.split(head)
+            return '{}-{}'.format(tail, result)
+        else:
+            return result
 
     def __call__(self, default_config_path):
         """Entry point for cu2d-trigger"""
@@ -125,5 +136,6 @@ class JobTrigger(object):
         if stackcfg['projects']:
             trigger_list = self.process_stack(stackcfg)
 
+        lock_name = self._get_lock_name(args.stackcfg)
         for trigger in trigger_list:
-            self.trigger_job(args.plugin_path, trigger)
+            self.trigger_job(args.plugin_path, trigger, lock_name)
