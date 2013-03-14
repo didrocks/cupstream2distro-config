@@ -26,7 +26,6 @@
         </hudson.model.BooleanParameterDefinition>
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
-    <hudson.plugins.build__publisher.ExternalProjectProperty/>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
   <canRoam>true</canRoam>
@@ -66,8 +65,28 @@
         </hudson.plugins.parameterizedtrigger.BlockableBuildTriggerConfig>
       </configs>
     </hudson.plugins.parameterizedtrigger.TriggerBuilder>
+{% if aggregate_tests_script %}
+    <hudson.tasks.Shell>
+      <command>{{ aggregate_tests_script }}</command>
+    </hudson.tasks.Shell>
+{% endif %}
   </builders>
   <publishers>
+{% if aggregate_tests_script %}
+    {% if archive_artifacts %}
+    <hudson.tasks.ArtifactArchiver>
+      <artifacts>{{ archive_artifacts }}</artifacts>
+      <latestOnly>false</latestOnly>
+    </hudson.tasks.ArtifactArchiver>
+    {% endif %}
+    {% if publish_junit %}
+    <hudson.tasks.junit.JUnitResultArchiver>
+      <testResults>{{ publish_junit }}</testResults>
+      <keepLongStdio>false</keepLongStdio>
+      <testDataPublishers/>
+    </hudson.tasks.junit.JUnitResultArchiver>
+    {% endif %}
+{% endif %}
 {% if contact_email %}
     <hudson.tasks.Mailer>
       <recipients>{{ contact_email }}</recipients>
