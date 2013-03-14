@@ -22,7 +22,7 @@ def get_ci_base_job_name(name, config):
     if 'target_branch' not in config:
         return name
     if config['target_branch'].startswith('lp:'):
-        base_name = config['target_branch'].lstrip('lp:').replace('/', '-')
+        base_name = config['target_branch'][3:].replace('/', '-')
         return base_name.lstrip('~')
     else:
         return None

@@ -30,7 +30,8 @@ from textwrap import dedent
 
 from c2dconfigutils import (
     dict_union, load_jenkins_credentials, load_default_cfg, load_stack_cfg,
-    get_jinja_environment, get_jenkins_handle, setup_job, set_logging)
+    get_jinja_environment, get_jenkins_handle, setup_job, set_logging,
+    get_ci_base_job_name)
 
 
 class JobParameter(object):
@@ -186,7 +187,9 @@ class UpdateCi(object):
         :param job_template: template used to define the main job
         :param build_template: template used to define the build jobs
         """
-        job_name = "-".join([project_name, job_type])
+
+        job_base_name = get_ci_base_job_name(project_name, job_config)
+        job_name = "-".join([job_base_name, job_type])
         build_list = []
         if 'configurations' in job_config:
             configurations = job_config.pop('configurations')
@@ -213,7 +216,7 @@ class UpdateCi(object):
                     dict_union(build_config, data)
                     ctx = self.process_project_config(project_name,
                                                       build_config)
-                    build_name = '-'.join([project_name, config_name,
+                    build_name = '-'.join([job_base_name, config_name,
                                            job_type])
                     build_list.append(build_name)
                     job_list.append({'name': build_name,
