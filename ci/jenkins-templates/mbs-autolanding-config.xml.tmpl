@@ -77,12 +77,14 @@
 {% endif %}
   </builders>
   <publishers>
-{% if publish_junit %}
+{% if aggregate_tests_script %}
+    {% if publish_junit %}
     <hudson.tasks.junit.JUnitResultArchiver>
       <testResults>{{ publish_junit }}</testResults>
       <keepLongStdio>false</keepLongStdio>
       <testDataPublishers/>
     </hudson.tasks.junit.JUnitResultArchiver>
+    {% endif %}
 {% endif %}
 {% if contact_email %}
     <hudson.tasks.Mailer>
