@@ -1,4 +1,6 @@
 import logging
+import jenkins
+import jinja2
 import os
 import urllib2
 import yaml
@@ -84,6 +86,36 @@ def load_stack_cfg(path, default_config):
 
     dict_union(default_config, cfg)
     return default_config['stack']
+
+
+def get_jinja_environment(default_config_path, stack):
+    if not 'tmpldir' in stack:
+        tmpldir = os.path.join(default_config_path, 'jenkins-templates')
+    else:
+        tmpldir = stack['tmpldir']
+
+    tmpldir = os.path.abspath(tmpldir)
+    logging.debug('Templates directory: %s', tmpldir)
+
+    if not os.path.exists(tmpldir):
+        logging.error('Template directory doesn\'t exist')
+        return False
+
+    return jinja2.Environment(loader=jinja2.FileSystemLoader(tmpldir))
+
+
+def get_jenkins_handle(jenkins_config):
+    if not jenkins_config['url']:
+        logging.error("Please provide a URL to the jenkins instance.")
+        return False
+    if 'username' in jenkins_config:
+        jenkins_handle = jenkins.Jenkins(
+            jenkins_config['url'],
+            username=jenkins_config['username'],
+            password=jenkins_config['password'])
+    else:
+        jenkins_handle = jenkins.Jenkins(jenkins_config['url'])
+    return jenkins_handle
 
 
 def setup_job(jenkins_handle, jjenv, jobname, tmplname, ctx, update=False):
