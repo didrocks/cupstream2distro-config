@@ -132,6 +132,7 @@ class JobTrigger(object):
         stackcfg = load_stack_cfg(args.stackcfg, default_config)
         if not stackcfg:
             logging.error('Stack configuration failed to load. Aborting!')
+            return 1
         if stackcfg['projects']:
             trigger_list = self.process_stack(stackcfg)
 

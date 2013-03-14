@@ -36,8 +36,8 @@ import copy
 sys.path.append('..')  # add local cupstream2distro
 
 from c2dconfigutils.c2dconfigutils import (
-    load_jenkins_credentials, load_default_cfg, load_stack_cfg,
-    setup_job, set_logging, dict_union)
+    dict_union, load_jenkins_credentials, load_default_cfg, load_stack_cfg,
+    get_jinja_environment, get_jenkins_handle, setup_job, set_logging)
 
 
 BASEDIR = os.path.dirname(__file__)
@@ -86,40 +86,17 @@ def setup_branch(stack):
                 sys.exit(1)
 
 
-def update_jenkins(jkcfg, stack, release, update=False):
+def update_jenkins(jkh, jjenv, stack, release, update=False):
     """ Add/update jenkins jobs
 
-    :param jkcfg: dictionary with the credentials
+    :param jkh: handle to jenkins server
+    :param jjenv: handle to jinja environment
     :param stack: dictionary with configuration of the stack
     :param release: Release name used by jenkins for the stack
     :param update: Update existing jobs if true
 
     :return: True on success
     """
-    if not 'tmpldir' in stack:
-        tmpldir = os.path.join(BASEDIR, 'jenkins-templates')
-    else:
-        tmpldir = stack['tmpldir']
-
-    tmpldir = os.path.abspath(tmpldir)
-    logging.debug('Templates directory: %s', tmpldir)
-
-    if not os.path.exists(tmpldir):
-        logging.error('Template directory doesn\'t exist')
-        return False
-
-    if not jkcfg['url']:
-        logging.error("Please provide a URL to the jenkins instance.")
-        sys.exit(1)
-
-    jjenv = jinja2.Environment(loader=jinja2.FileSystemLoader(tmpldir))
-
-    if 'username' in jkcfg:
-        jkh = jenkins.Jenkins(jkcfg['url'],
-                                  username=jkcfg['username'],
-                                  password=jkcfg['password'])
-    else:
-        jkh = jenkins.Jenkins(jkcfg['url'])
 
     basename = [PREFIX, stack['name'], release]
 
@@ -258,6 +235,7 @@ To update the indicator stack run the following command:
     release = os.path.dirname(os.path.abspath(args.stackcfg)).split(os.path.sep)[-1]
     if not stackcfg:
         logging.error('Stack configuration failed to load. Aborting!')
+        sys.exit(1)
 
     if not args.no_setupbranch:
         setup_branch(stackcfg)
@@ -270,7 +248,13 @@ To update the indicator stack run the following command:
         if not credentials:
             logging.error('Credentials not found. Aborting!')
             sys.exit(1)
-        if not update_jenkins(credentials, stackcfg, release, args.update_jobs):
+        jkh = get_jenkins_handle(credentials)
+        if not jkh:
+            logging.error('Could not acquire connection to jenkins. ' +
+                          'Aborting!')
+            sys.exit(1)
+        jjenv = get_jinja_environment(BASEDIR, stackcfg)
+        if not update_jenkins(jkh, jjenv, stackcfg, release, args.update_jobs):
             logging.error('Failed to configure jenkins jobs. Aborting!')
             sys.exit(2)
 
