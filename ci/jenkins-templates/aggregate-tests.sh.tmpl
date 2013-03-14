@@ -1,0 +1,9 @@
+#!/bin/bash
+set -x
+
+wget -O downstream_number.txt &quot;http://localhost:8080/job/{DOWNSTREAM_BUILD_JOB}/api/xml?depth=1&amp;xpath=/freeStyleProject/build[action/cause/upstreamProject=\&quot;$JOB_NAME\&quot; and action/cause/upstreamBuild=$BUILD_NUMBER]/number/text()&quot;
+
+downstream_number=`cat downstream_number.txt`
+results_url=http://localhost:8080/job/{DOWNSTREAM_BUILD_JOB}/$downstream_number/artifact/test_results.xml
+
+wget -O test_results.xml $results_url

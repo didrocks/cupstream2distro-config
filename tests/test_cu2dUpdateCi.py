@@ -29,6 +29,31 @@ class TestJobParameter(TestCase):
         self.assertNotEqual(p, q)
 
 
+class TestGetBuildScript(TestCase):
+    def setUp(self):
+        self.update_ci = UpdateCi()
+        self.update_ci.default_config_path = 'base_path'
+
+    def test_get_build_script(self):
+        #script = "This is a {SCRIPT} to {TEST}."
+        script = dedent("""\
+                        #!{SHELL}
+                        set -x
+
+                        echo {MESSAGE}""")
+        formatting = {'SHELL': '/bin/bash',
+                      'MESSAGE': 'All is well'}
+        expected = script.format(**formatting)
+        with patch('c2dconfigutils.cu2dUpdateCi.open',
+                   create=True) as mock_open:
+            mock_open.return_value = MagicMock(spec=file)
+            mock_open().read.return_value = script
+            actual = self.update_ci._get_build_script('file.sh.tmpl',
+                                                      formatting)
+            mock_open.assert_called_with('base_path/file.sh.tmpl', 'r')
+            self.assertEqual(expected, actual)
+
+
 class TestAddParameter(TestCase):
     def setUp(self):
         self.update_ci = UpdateCi()
@@ -111,6 +136,8 @@ class TestProcessProjectConfig(TestCase):
             mock_open.return_value = MagicMock(spec=file)
             mock_open().read.return_value = script
             actual = self.update_ci.process_project_config('project', config)
+            mock_open.assert_called_with(
+                'default/jenkins-templates/acquire-hooks.sh.tmpl', 'r')
             self.assertEqual(expected, actual)
 
 

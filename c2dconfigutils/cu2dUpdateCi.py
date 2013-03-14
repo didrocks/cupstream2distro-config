@@ -77,9 +77,15 @@ class UpdateCi(object):
 
     DEFAULT_HOOK_LOCATION = '/tmp/$JOB_NAME-hooks'
     ACQUIRE_HOOK_SOURCE_TEMPLATE = 'jenkins-templates/acquire-hooks.sh.tmpl'
+    AGGREGATE_TESTS_TEMPLATE = 'jenkins-templates/aggregate-tests.sh.tmpl'
 
     def __init__(self):
         self.default_config_path = None
+
+    def _get_build_script(self, template, formatting):
+        script = open(os.path.join(self.default_config_path,
+                                   template), 'r').read()
+        return script.format(**formatting)
 
     def parse_arguments(self):
         parser = argparse.ArgumentParser(
@@ -136,14 +142,18 @@ class UpdateCi(object):
             # Process all the special keys first
             if key == 'hook_source':
                 ctx['hook_location'] = self.DEFAULT_HOOK_LOCATION
-                hook_script = open(
-                    os.path.join(self.default_config_path,
-                                 self.ACQUIRE_HOOK_SOURCE_TEMPLATE),
-                    'r').read()
-                hook_script = hook_script.format(
-                    DEFAULT_HOOK_LOCATION=self.DEFAULT_HOOK_LOCATION)
-                ctx['acquire_hook_script'] = hook_script
+                formatting = {'DEFAULT_HOOK_LOCATION':
+                              self.DEFAULT_HOOK_LOCATION}
+                script = self._get_build_script(
+                    self.ACQUIRE_HOOK_SOURCE_TEMPLATE,
+                    formatting)
+                ctx['acquire_hook_script'] = script
                 parameters[key] = data
+            elif key == 'aggregate_tests':
+                formatting = {'DOWNSTREAM_BUILD_JOB': data}
+                script = self._get_build_script(self.AGGREGATE_TESTS_TEMPLATE,
+                                                formatting)
+                ctx['aggregate_tests_script'] = script
             elif key in self.TEMPLATE_CONTEXT_KEYS:
                 # These are added as ctx keys only
                 ctx[key] = data
@@ -193,15 +203,22 @@ class UpdateCi(object):
                     template = data.pop('template')
                 else:
                     template = build_template
-                dict_union(build_config, data)
+                # A pre-defined job can be specified as a build task by
+                # naming the configuration to match the job name and
+                # setting the template value to False or None.
+                if not template or template is None:
+                    build_list.append(config_name)
 
-                ctx = self.process_project_config(project_name, build_config)
-
-                build_name = '-'.join([project_name, config_name, job_type])
-                build_list.append(build_name)
-                job_list.append({'name': build_name,
-                                 'template': template,
-                                 'ctx': ctx})
+                else:
+                    dict_union(build_config, data)
+                    ctx = self.process_project_config(project_name,
+                                                      build_config)
+                    build_name = '-'.join([project_name, config_name,
+                                           job_type])
+                    build_list.append(build_name)
+                    job_list.append({'name': build_name,
+                                     'template': template,
+                                     'ctx': ctx})
 
         ctx = self.process_project_config(project_name, job_config)
 
