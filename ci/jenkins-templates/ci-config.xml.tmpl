@@ -68,6 +68,12 @@
   </builders>
   <publishers>
 {% if aggregate_tests_script %}
+    {% if archive_artifacts %}
+    <hudson.tasks.ArtifactArchiver>
+      <artifacts>{{ archive_artifacts }}</artifacts>
+      <latestOnly>false</latestOnly>
+    </hudson.tasks.ArtifactArchiver>
+    {% endif %}
     {% if publish_junit %}
     <hudson.tasks.junit.JUnitResultArchiver>
       <testResults>{{ publish_junit }}</testResults>
