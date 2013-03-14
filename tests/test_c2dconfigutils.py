@@ -100,6 +100,15 @@ class TestGetCiBaseJobName(TestWithScenarios, TestCase):
          {'name': 'codename',
           'config': {'target_branch': '~code-team/other_project/phablet'},
           'expected_result': None}),
+        ('libunity-phablet',
+         {'name': 'libunity',
+          'config': {'target_branch': 'lp:libunity/phablet'},
+          'expected_result': 'libunity-phablet'}),
+        ('lp-project',
+         {'name': 'lplplp',
+          'config': {'target_branch': 'lp:lplplp'},
+          'expected_result': 'lplplp'}),
+
     ]
 
     def test_get_ci_base_job_name(self):

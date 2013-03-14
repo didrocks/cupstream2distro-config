@@ -28,7 +28,8 @@ import os
 import subprocess
 
 from c2dconfigutils import (
-    dict_union, load_default_cfg, load_stack_cfg, set_logging)
+    dict_union, load_default_cfg, load_stack_cfg, set_logging,
+    get_ci_base_job_name)
 
 
 class JobTrigger(object):
@@ -61,7 +62,8 @@ class JobTrigger(object):
         :return trigger: dictionary containing the job trigger details
         """
         options = []
-        name = '-'.join([project_name, job_type])
+        job_base_name = get_ci_base_job_name(project_name, project_config)
+        name = '-'.join([job_base_name, job_type])
         branch = project_config.get('target_branch', 'lp:' + project_name)
         if job_type is 'autolanding':
             options.append('--autoland')
