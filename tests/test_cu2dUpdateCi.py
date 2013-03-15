@@ -75,6 +75,7 @@ class TestProcessProjectConfig(TestCase):
     def test_project_config_implied_target_branch(self):
         config = {}
         expected = {'target_branch': 'lp:project',
+                    'project_name': 'project',
                     'parameter_list': [JobParameter('target_branch',
                                                     'lp:project')]}
         actual = self.update_ci.process_project_config('project', config)
@@ -84,13 +85,15 @@ class TestProcessProjectConfig(TestCase):
         config = {'target_branch': 'lp:project/sub'}
         expected = {'target_branch': 'lp:project/sub',
                     'parameter_list': [JobParameter('target_branch',
-                                                    'lp:project/sub')]}
+                                                    'lp:project/sub')],
+                    'project_name': 'project'}
         actual = self.update_ci.process_project_config('project', config)
         self.assertEqual(expected, actual)
 
     def test_project_config_ctx_only(self):
         config = {'team': 'team_name'}
         expected = {'target_branch': 'lp:project',
+                    'project_name': 'project',
                     'parameter_list': [JobParameter('target_branch',
                                                     'lp:project')],
                     'team': 'team_name'}
@@ -101,6 +104,7 @@ class TestProcessProjectConfig(TestCase):
         config = {'some_parameter': 'some_value'}
         expected = {'target_branch': 'lp:project',
                     'some_parameter': 'some_value',
+                    'project_name': 'project',
                     'parameter_list': [JobParameter('target_branch',
                                                     'lp:project'),
                                        JobParameter('some_parameter',
@@ -125,6 +129,7 @@ class TestProcessProjectConfig(TestCase):
         expected = {'hook_location': '/tmp/$JOB_NAME-hooks',
                     'target_branch': 'lp:project',
                     'hook_source': 'lp:hooks',
+                    'project_name': 'project',
                     'acquire_hook_script': script.format(
                         DEFAULT_HOOK_LOCATION='/tmp/$JOB_NAME-hooks'),
                     'parameter_list': [JobParameter('target_branch',
