@@ -62,7 +62,7 @@ if [ -z &quot;${autolanding}&quot; ]; then
     exit 0
 fi
 
-tmp_dir=&quot;${local_archive_tmp}/${project}-al-${local_archive_pocket}-${BUILD_NUMBER}&quot;
+tmp_dir=&quot;${local_archive_tmp}/${project}-al-${local_archive_pocket}-${UPSTREAM_BUILD_NUMBER}&quot;
 
 # mkdir &quot;${tmp_dir}&quot; can fail due to multiple jobs attempting to create the directory
 ssh ${local_archive_login}@${local_archive_host} mkdir &quot;${tmp_dir}&quot; || true
