@@ -17,6 +17,11 @@
           <description>Specifies that this is an autolanding/merge job. Used to properly set package version string.</description>
           <defaultValue>True</defaultValue>
         </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>project</name>
+          <description>Project name</description>
+          <defaultValue>{{ project_name }}</defaultValue>
+        </hudson.model.StringParameterDefinition>
 {% for parameter in parameter_list %}
         <hudson.model.StringParameterDefinition>
           <name>{{ parameter.name }}</name>
@@ -45,6 +50,9 @@
         <hudson.plugins.parameterizedtrigger.BlockableBuildTriggerConfig>
           <configs>
             <hudson.plugins.parameterizedtrigger.CurrentBuildParameters/>
+            <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
+                <properties>UPSTREAM_BUILD_NUMBER=$BUILD_NUMBER</properties>
+            </hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
           </configs>
           <projects>{{ builder_list }}</projects>
           <condition>ALWAYS</condition>

@@ -174,6 +174,8 @@ class UpdateCi(object):
         for parameter in parameters:
             ctx[parameter] = parameters[parameter]
             self.add_parameter(ctx, parameter, parameters[parameter])
+        # add project name as well
+        ctx['project_name'] = project_name
         return ctx
 
     def generate_jobs(self, job_list, project_name, job_type, job_config,

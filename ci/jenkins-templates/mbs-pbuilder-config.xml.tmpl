@@ -17,6 +17,16 @@
           <description>Specifies that this is an autolanding/merge job. Used to properly set package version string.</description>
           <defaultValue></defaultValue>
         </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>UPSTREAM_BUILD_NUMBER</name>
+          <description>Build number of the upstream job used in the tmp directory with the deb output</description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>project</name>
+          <description>Project name</description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
 {% for parameter in parameter_list %}
         <hudson.model.StringParameterDefinition>
           <name>{{ parameter.name }}</name>
