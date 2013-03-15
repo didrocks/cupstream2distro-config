@@ -71,13 +71,13 @@ tmp_dir=&quot;${local_archive_tmp}/${project_name}-al-${local_archive_pocket}-${
 
 # mkdir &quot;${tmp_dir}&quot; can fail due to multiple jobs attempting to create the directory
 ssh ${local_archive_login}@${local_archive_host} mkdir &quot;${tmp_dir}&quot; || true
-ssh ${local_archive_login}@${local_archive_host} mkdir &quot;${tmp_dir}/${flavor}&quot;
+ssh ${local_archive_login}@${local_archive_host} mkdir &quot;${tmp_dir}/${JOB_NAME}&quot;
 
 # Switch to the output directory containing the build results
 cd work/output
 
 # Copy the build results to the temporary holding area, if all jobs succeed, these will be dput into the ppa archive.
-scp * ${local_archive_login}@${local_archive_host}:${tmp_dir}/${flavor}</command>
+scp * ${local_archive_login}@${local_archive_host}:${tmp_dir}/${JOB_NAME}</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
