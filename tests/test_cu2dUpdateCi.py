@@ -79,7 +79,7 @@ class TestProcessProjectConfig(TestCase):
                     'parameter_list': [JobParameter('target_branch',
                                                     'lp:project'),
                                        JobParameter('project_name',
-                                                    'project'),]}
+                                                    'project')]}
         actual = self.update_ci.process_project_config('project', config)
         self.assertEqual(expected, actual)
 
@@ -89,7 +89,7 @@ class TestProcessProjectConfig(TestCase):
                     'parameter_list': [JobParameter('target_branch',
                                                     'lp:project/sub'),
                                        JobParameter('project_name',
-                                                    'project'),],
+                                                    'project')],
                     'project_name': 'project'}
         actual = self.update_ci.process_project_config('project', config)
         self.assertEqual(expected, actual)
@@ -101,7 +101,7 @@ class TestProcessProjectConfig(TestCase):
                     'parameter_list': [JobParameter('target_branch',
                                                     'lp:project'),
                                        JobParameter('project_name',
-                                                    'project'),],
+                                                    'project')],
                     'team': 'team_name'}
         actual = self.update_ci.process_project_config('project', config)
         self.assertEqual(expected, actual)
@@ -116,7 +116,7 @@ class TestProcessProjectConfig(TestCase):
                                        JobParameter('some_parameter',
                                                     'some_value'),
                                        JobParameter('project_name',
-                                                    'project'),]}
+                                                    'project')]}
         actual = self.update_ci.process_project_config('project', config)
         self.assertEqual(expected, actual)
 
@@ -145,7 +145,7 @@ class TestProcessProjectConfig(TestCase):
                                        JobParameter('hook_source',
                                                     'lp:hooks'),
                                        JobParameter('project_name',
-                                                    'project'),]}
+                                                    'project')]}
         with patch('c2dconfigutils.cu2dUpdateCi.open',
                    create=True) as mock_open:
             mock_open.return_value = MagicMock(spec=file)
