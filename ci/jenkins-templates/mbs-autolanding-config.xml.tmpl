@@ -171,20 +171,6 @@ test_result=PASSED</properties>
             <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
               <properties>local_archive_host=$local_archive_host
 local_archive_login=$local_archive_login
-temp_dir=${local_archive_tmp}/${project}-al-${local_archive_pocket}-${BUILD_NUMBER}
-ppa_build_number=${BUILD_NUMBER}
-distributions=</properties>
-            </hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
-          </configs>
-          <projects>{{ dput_job }}</projects>
-          <condition>SUCCESS</condition>
-          <triggerWithNoParameters>false</triggerWithNoParameters>
-        </hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
-        <hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
-          <configs>
-            <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
-              <properties>local_archive_host=$local_archive_host
-local_archive_login=$local_archive_login
 temp_dir=${local_archive_tmp}/${project}-al-${local_archive_pocket}-${BUILD_NUMBER}</properties>
             </hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
           </configs>
