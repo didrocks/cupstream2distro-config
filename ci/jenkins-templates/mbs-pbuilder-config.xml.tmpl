@@ -22,11 +22,6 @@
           <description>Build number of the upstream job used in the tmp directory with the deb output</description>
           <defaultValue></defaultValue>
         </hudson.model.StringParameterDefinition>
-        <hudson.model.StringParameterDefinition>
-          <name>project</name>
-          <description>Project name</description>
-          <defaultValue></defaultValue>
-        </hudson.model.StringParameterDefinition>
 {% for parameter in parameter_list %}
         <hudson.model.StringParameterDefinition>
           <name>{{ parameter.name }}</name>
@@ -72,7 +67,7 @@ if [ -z &quot;${autolanding}&quot; ]; then
     exit 0
 fi
 
-tmp_dir=&quot;${local_archive_tmp}/${project}-al-${local_archive_pocket}-${UPSTREAM_BUILD_NUMBER}&quot;
+tmp_dir=&quot;${local_archive_tmp}/${project_name}-al-${local_archive_pocket}-${UPSTREAM_BUILD_NUMBER}&quot;
 
 # mkdir &quot;${tmp_dir}&quot; can fail due to multiple jobs attempting to create the directory
 ssh ${local_archive_login}@${local_archive_host} mkdir &quot;${tmp_dir}&quot; || true
