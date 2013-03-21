@@ -74,6 +74,9 @@ class UpdateCi(object):
         'priority',
         'team',
         'use_description_for_commit',
+        'log_rotator',
+        'days_to_keep_builds',
+        'num_to_keep_builds',
     ]
 
     DEFAULT_HOOK_LOCATION = '/tmp/$JOB_NAME-hooks'
