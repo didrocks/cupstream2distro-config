@@ -5,6 +5,14 @@
 &lt;B&gt;PURPOSE:&lt;/B&gt; pbuilder job for {{ target_branch }} {{ configuration }}&lt;BR&gt;&#xd;
 &lt;B&gt;TEAM:&lt;/B&gt; {{ team }}&lt;BR&gt;&#xd;
 &lt;B&gt;POC:&lt;/B&gt; {{ contact_email }}&lt;BR&gt;&#xd;</description>
+{% if log_rotator %}
+  <logRotator>
+    <daysToKeep>{{ log_rotator.days_to_keep_builds }}</daysToKeep>
+    <numToKeep>{{ log_rotator.num_to_keep_builds }}</numToKeep>
+    <artifactDaysToKeep>-1</artifactDaysToKeep>
+    <artifactNumToKeep>-1</artifactNumToKeep>
+  </logRotator>
+{% endif %}
   <keepDependencies>false</keepDependencies>
   <properties>
     <hudson.queueSorter.PrioritySorterJobProperty>
