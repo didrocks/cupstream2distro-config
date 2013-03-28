@@ -22,6 +22,7 @@ cd $WRKDIR
 
 </command>
     </hudson.tasks.Shell>
+{% if projects %}    
     <hudson.plugins.parameterizedtrigger.TriggerBuilder>
       <configs>
         <hudson.plugins.parameterizedtrigger.BlockableBuildTriggerConfig>
@@ -52,6 +53,7 @@ cd $WRKDIR
         </hudson.plugins.parameterizedtrigger.BlockableBuildTriggerConfig>
       </configs>
     </hudson.plugins.parameterizedtrigger.TriggerBuilder>
+{% endif %}
   </builders>
   <publishers>
     <hudson.plugins.build__publisher.BuildPublisher>
