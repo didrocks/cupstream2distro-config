@@ -79,8 +79,8 @@ for card in ati intel nvidia; do
         exit $RET
     fi
 
-    AUTOPILOTRC={{ BASEDIR }}/default.autopilotrc
-    [ -e "{{ BASEDIR }}/{{ stack }}.autopilotrc" ] &amp;&amp; AUTOPILOTRC={{ BASEDIR }}/{{ stack }}.autopilotrc
+    AUTOPILOTRC={{ BASEDIR }}/history/{{ release }}/{{ stack }}.autopilotrc
+    [ ! -e "$AUTOPILOTRC" ] &amp;&amp; AUTOPILOTRC={{ BASEDIR }}/default.autopilotrc
     {{ BINDIR }}/cu2d-autopilot-report -C $AUTOPILOTRC $JUNIT $card
     RET=$?
 
