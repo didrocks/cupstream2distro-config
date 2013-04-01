@@ -167,6 +167,10 @@ def update_jenkins(jkh, jjenv, stack, release, update=False):
         ctx = dict(ctxbase)
         ctx['opts'] = '-a -s %s -p %s' % (stack['series'], stack['ppa'])
         ctx['extracheck'] = stack['extracheck']
+        checkparameters = 'ppa={}'.format(stack['ppa'])
+        for parameter in stack.get('test_parameters', {}):
+          checkparameters += '\n{}={}'.format(parameter, stack['test_parameters'][parameter])
+        ctx['checkparameters'] = checkparameters
         setup_job(jkh, jjenv, jobname, TEMPLATES['check'],
                   ctx, update)
 
