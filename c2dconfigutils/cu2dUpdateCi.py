@@ -100,7 +100,8 @@ class UpdateCi(object):
                 To update the indicator stack run the following command:
                     $ ./cu2d-update-ci -dU ./etc/indicators-head.cfg
                 To update a project in the indicator stack run:
-                    $ ./cu2d-update-ci -U -p myproject /etc/indicators-head.cfg
+                    $ ./cu2d-update-ci -U -p myproject \
+                        ./etc/indicators-head.cfg
                 '''),
             formatter_class=argparse.RawTextHelpFormatter)
         parser.add_argument('-C', '--credentials', metavar='CREDENTIALFILE',
@@ -243,6 +244,13 @@ class UpdateCi(object):
                          'ctx': ctx})
 
     def prepare_project(self, job_list, stack, project_name):
+        """Prepare by project
+
+
+        :param job_list: list to hold the generated jobs
+        :param stack: dictionary with configuration of the stack
+        :param project_name: a project to update in the stack
+        """
         # Merge the default config with the project specific config
         project_config = copy.deepcopy(stack['ci_default'])
         dict_union(project_config, stack['projects'][project_name])
@@ -287,22 +295,18 @@ class UpdateCi(object):
 
         :param job_list: list to hold the generated jobs
         :param stack: dictionary with configuration of the stack
+        :param target_project: a project to update in the stack
         """
-        # prepare by project
-        if target_project:
-            #assume an invalid project name was used
-            project_found = False
-            for project_name in stack['projects']:
-                if project_name == target_project:
-                    project_found = True
-                    self.prepare_project(job_list, stack,
-                                         target_project)
-            if not project_found:
-                logging.error("project: " + target_project + " was not found")
-                return 1
-        else:
+        if target_project is None:
             for project_name in stack['projects']:
                 self.prepare_project(job_list, stack, project_name)
+            return True
+        elif target_project in stack['projects']:
+            self.prepare_project(job_list, stack, target_project)
+            return True
+        else:
+            logging.error("project: {} was not found".format(target_project))
+            return False
 
     def update_jenkins(self, jenkins_handle, jjenv, stack, update=False,
                        target_project=None):

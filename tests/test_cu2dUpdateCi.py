@@ -233,7 +233,7 @@ class TestUpdateJenkins(TestCase):
 
     def test_empty_stack(self):
         stack = {'projects': None}
-        self.update_ci.update_jenkins(None, None, stack)
+        self.update_ci.update_jenkins(None, None, stack, None)
 
     def test_stack(self):
         stack = {
@@ -313,7 +313,9 @@ class TestProcessStackIntegration(TestCase):
     def setUp(self):
         self.update_ci = UpdateCi()
         self.job_list = []
-        self.update_ci.process_stack(self.job_list, self.stack['stack'])
+        self.target_project = None
+        self.update_ci.process_stack(self.job_list, self.stack['stack'],
+                                     self.target_project)
 
     def test_job_names(self):
         expected_name_list = ['autopilot-raring-amd64-ci',
@@ -403,3 +405,25 @@ class TestProcessStackIntegration(TestCase):
                                         child['ctx']['parameter_list']]
                         for p in parent_params:
                             self.assertIn(p, child_params)
+
+    def test_target_project(self):
+        job_list = []
+        target_project = 'autopilot'
+        self.update_ci.process_stack(job_list, self.stack['stack'],
+                                     target_project)
+        expected_name_list = ['autopilot-raring-amd64-ci',
+                              'autopilot-raring-armhf-ci',
+                              'autopilot-ci',
+                              'autopilot-raring-amd64-autolanding',
+                              'autopilot-raring-armhf-autolanding',
+                              'autopilot-raring-i386-autolanding',
+                              'autopilot-autolanding']
+        actual_name_list = [job['name'] for job in job_list]
+        self.assertEqual(expected_name_list, actual_name_list)
+
+    def test_target_project_invalid(self):
+        job_list = []
+        target_project = 'this_should_error'
+        result = self.update_ci.process_stack(job_list, self.stack['stack'],
+                                              target_project)
+        self.assertFalse(result)
