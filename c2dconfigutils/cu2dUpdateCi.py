@@ -100,8 +100,7 @@ class UpdateCi(object):
                 To update the indicator stack run the following command:
                     $ ./cu2d-update-ci -dU ./etc/indicators-head.cfg
                 To update a project in the indicator stack run:
-                    $ ./cu2d-update-ci -U -p myproject \
-                        ./etc/indicators-head.cfg
+                    $ ./cu2d-update-ci -U -p aproject ./etc/indicators-head.cfg
                 '''),
             formatter_class=argparse.RawTextHelpFormatter)
         parser.add_argument('-C', '--credentials', metavar='CREDENTIALFILE',
