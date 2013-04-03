@@ -99,6 +99,8 @@ class UpdateCi(object):
                 Example:
                 To update the indicator stack run the following command:
                     $ ./cu2d-update-ci -dU ./etc/indicators-head.cfg
+                To update a project in the indicator stack run:
+                    $ ./cu2d-update-ci -U -p myproject /etc/indicators-head.cfg
                 '''),
             formatter_class=argparse.RawTextHelpFormatter)
         parser.add_argument('-C', '--credentials', metavar='CREDENTIALFILE',
@@ -114,6 +116,10 @@ class UpdateCi(object):
         parser.add_argument('-d', '--debug', action='store_true',
                             default=False,
                             help='enable debug mode')
+        parser.add_argument('-p', '--project', action='store',
+                            dest='project',
+                            help='the name of a project in a stack '
+                            'to update')
         parser.add_argument('stackcfg', help='Path to a configuration file '
                             'for the stack')
         return parser.parse_args()
@@ -236,55 +242,70 @@ class UpdateCi(object):
                          'template': job_template,
                          'ctx': ctx})
 
-    def process_stack(self, job_list, stack):
+    def prepare_project(self, job_list, stack, project_name):
+        # Merge the default config with the project specific config
+        project_config = copy.deepcopy(stack['ci_default'])
+        dict_union(project_config, stack['projects'][project_name])
+
+        ci_template = None
+        autolanding_template = None
+        ci_only_dict = dict()
+        autolanding_only_dict = dict()
+
+        # Extract the ci, autolanding or build specific items to make the
+        # project configuration purely generic.
+        if 'ci' in project_config:
+            ci_only_dict = project_config.pop('ci')
+        if 'autolanding' in project_config:
+            autolanding_only_dict = project_config.pop('autolanding')
+        if 'ci_template' in project_config:
+            ci_template = project_config.pop('ci_template')
+        if 'autolanding_template' in project_config:
+            autolanding_template = project_config.pop('autolanding_template')
+        if 'build_template' in project_config:
+            build_template = project_config.pop('build_template')
+
+        # Create ci job, add back in the ci dict
+        if ci_template:
+            ci_dict = copy.deepcopy(project_config)
+            if ci_only_dict is not None:
+                dict_union(ci_dict, ci_only_dict)
+            self.generate_jobs(job_list, project_name, 'ci', ci_dict,
+                               ci_template, build_template)
+
+        # Create autolanding job, add back in the autolanding dict
+        if autolanding_template:
+            autolanding_dict = copy.deepcopy(project_config)
+            if autolanding_only_dict is not None:
+                dict_union(autolanding_dict, autolanding_only_dict)
+            self.generate_jobs(job_list, project_name, 'autolanding',
+                               autolanding_dict, autolanding_template,
+                               build_template)
+
+    def process_stack(self, job_list, stack, target_project=None):
         """ Process the projects with the stack
 
         :param job_list: list to hold the generated jobs
         :param stack: dictionary with configuration of the stack
         """
         # prepare by project
-        for project_name in stack['projects']:
-            # Merge the default config with the project specific config
-            project_config = copy.deepcopy(stack['ci_default'])
-            dict_union(project_config, stack['projects'][project_name])
+        if target_project:
+            #assume an invalid project name was used
+            project_found = False
+            for project_name in stack['projects']:
+                if project_name == target_project:
+                    project_found = True
+                    self.prepare_project(job_list, stack,
+                                         target_project)
+            if not project_found:
+                logging.error("project: " + target_project + " was not found")
+                return 1
+        else:
+            for project_name in stack['projects']:
+                self.prepare_project(job_list, stack, project_name)
 
-            ci_template = None
-            autolanding_template = None
-            ci_only_dict = dict()
-            autolanding_only_dict = dict()
-
-            # Extract the ci, autolanding or build specific items to make the
-            # project configuration purely generic.
-            if 'ci' in project_config:
-                ci_only_dict = project_config.pop('ci')
-            if 'autolanding' in project_config:
-                autolanding_only_dict = project_config.pop('autolanding')
-            if 'ci_template' in project_config:
-                ci_template = project_config.pop('ci_template')
-            if 'autolanding_template' in project_config:
-                autolanding_template = project_config.pop(
-                    'autolanding_template')
-            if 'build_template' in project_config:
-                build_template = project_config.pop('build_template')
-
-            # Create ci job, add back in the ci dict
-            if ci_template:
-                ci_dict = copy.deepcopy(project_config)
-                if ci_only_dict is not None:
-                    dict_union(ci_dict, ci_only_dict)
-                self.generate_jobs(job_list, project_name, 'ci', ci_dict,
-                                   ci_template, build_template)
-
-            # Create autolanding job, add back in the autolanding dict
-            if autolanding_template:
-                autolanding_dict = copy.deepcopy(project_config)
-                if autolanding_only_dict is not None:
-                    dict_union(autolanding_dict, autolanding_only_dict)
-                self.generate_jobs(job_list, project_name, 'autolanding',
-                                   autolanding_dict, autolanding_template,
-                                   build_template)
-
-    def update_jenkins(self, jenkins_handle, jjenv, stack, update=False):
+    def update_jenkins(self, jenkins_handle, jjenv, stack, update=False,
+                       target_project=None):
         """ Add/update jenkins jobs
 
         :param jenkins_handle: jenkins access handle
@@ -296,7 +317,7 @@ class UpdateCi(object):
         """
         if stack['projects']:
             job_list = []
-            self.process_stack(job_list, stack)
+            self.process_stack(job_list, stack, target_project)
             for job in job_list:
                 setup_job(jenkins_handle, jjenv, job['name'], job['template'],
                           job['ctx'], update)
@@ -331,7 +352,7 @@ class UpdateCi(object):
                 return 1
             jjenv = get_jinja_environment(default_config_path, stackcfg)
             if not self.update_jenkins(jenkins_handle, jjenv, stackcfg,
-                                       args.update_jobs):
+                                       args.update_jobs, args.project):
                 logging.error('Failed to configure jenkins jobs. Aborting!')
                 return 2
         return 0
