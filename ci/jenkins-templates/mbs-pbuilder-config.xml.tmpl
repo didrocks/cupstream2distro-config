@@ -60,7 +60,7 @@
     <com.ubuntu.builder.PBuilderPlugin>
       <hooks>$hooks</hooks>
       <mainBranch>$landing_candidate</mainBranch>
-      <packagingBranch></packagingBranch>
+      <packagingBranch>{{ packaging_branch }}</packagingBranch>
       <targetBranch>$target_branch</targetBranch>
       <extraHookDir>{{ hook_location }}</extraHookDir>
       <parallelJobs>{{ parallel_jobs }}</parallelJobs>
