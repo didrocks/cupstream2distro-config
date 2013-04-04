@@ -1,3 +1,10 @@
+cupstream2distro-config (0.2) raring; urgency=low
+
+  * update or deploy a single project in a stack
+    fixes https://bugs.launchpad.net/cupstream2distro-config/+bug/1163170
+
+ -- Chris Gagnon <chris.gagnon@canonical.com>  Wed, 03 Apr 2013 13:06:02 -0400
+
 cupstream2distro-config (0.1) raring; urgency=low
 
   * Initial release.
