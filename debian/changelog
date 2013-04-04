@@ -1,4 +1,4 @@
-cupstream2distro-config (0.1ubuntu1) raring; urgency=low
+cupstream2distro-config (0.2) raring; urgency=low
 
   * update or deploy a single project in a stack
     fixes https://bugs.launchpad.net/cupstream2distro-config/+bug/1163170
