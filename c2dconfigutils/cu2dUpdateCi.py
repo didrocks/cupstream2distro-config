@@ -323,7 +323,7 @@ class UpdateCi(object):
         :param target_project: target a single project in stack
         :param current_release: the latest ubuntu development release name
         :param orphan_release: ubuntu release that has been orphaned by project
-        :param remove: delete all jobs found by jenkins
+        :param remove: delete all orphaned jobs found
 
         """
         if target_project is None:
