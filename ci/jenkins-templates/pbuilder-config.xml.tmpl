@@ -133,6 +133,25 @@
       <sendToIndividuals>false</sendToIndividuals>
     </hudson.tasks.Mailer>
 {% endif %}
+{% if irc_channel %}
+    <hudson.plugins.ircbot.IrcPublisher>
+      <targets>
+        <hudson.plugins.im.GroupChatIMMessageTarget>
+          <name>{{ irc_channel }}</name>
+          <notificationOnly>true</notificationOnly>
+        </hudson.plugins.im.GroupChatIMMessageTarget>
+      </targets>
+      <strategy>{{ irc_notification }}</strategy>
+      <notifyOnBuildStart>false</notifyOnBuildStart>
+      <notifySuspects>false</notifySuspects>
+      <notifyCulprits>false</notifyCulprits>
+      <notifyFixers>false</notifyFixers>
+      <notifyUpstreamCommitters>false</notifyUpstreamCommitters>
+      <buildToChatNotifier class="hudson.plugins.im.build_notify.DefaultBuildToChatNotifier"/>
+      <matrixMultiplier>ONLY_CONFIGURATIONS</matrixMultiplier>
+      <channels/>
+    </hudson.plugins.ircbot.IrcPublisher>
+{% endif %}
 {% if publish %}
     <hudson.plugins.build__publisher.BuildPublisher>
       <publishUnstableBuilds>true</publishUnstableBuilds>
