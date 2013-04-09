@@ -87,7 +87,10 @@ class JobTrigger(object):
         # are not yet prepared for the daily-release process.
         # However, ci and autolanding is still needed.
         for section_name in ['projects', 'to_transition']:
-            for project_name in stack.get(section_name, []):
+            project_section = stack.get(section_name, [])
+            if project_section is None:
+                continue
+            for project_name in project_section:
                 project_config = copy.deepcopy(stack['ci_default'])
                 dict_union(project_config, stack[section_name][project_name])
 
@@ -138,6 +141,7 @@ class JobTrigger(object):
         if not stackcfg:
             logging.error('Stack configuration failed to load. Aborting!')
             return 1
+        trigger_list = []
         if stackcfg['projects']:
             trigger_list = self.process_stack(stackcfg)
 

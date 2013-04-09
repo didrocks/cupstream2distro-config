@@ -86,7 +86,10 @@ class CheckStalledMPs(object):
             # are not yet prepared for the daily-release process. However,
             # ci and autolanding is still needed.
             for section_name in ['projects', 'to_transition']:
-                for project in stackcfg.get(section_name, []):
+                project_section = stackcfg.get(section_name, [])
+                if project_section is None:
+                    continue
+                for project in project_section:
                     parameters = stackcfg[section_name][project]
                     target_branch = 'lp:' + project
                     if parameters and 'target_branch' in parameters:
