@@ -83,6 +83,17 @@ class TestProcessStack(TestWithScenarios, TestCase):
                                  {'name': 'bar-autolanding',
                                   'branch': 'lp:bar',
                                   'options': ['--autoland']}]}),
+        ('no-projects',
+         {
+             'stack': {'ci_default': ci_default,
+                       'projects': None,
+                       'to_transition': {'bar': {}}},
+             'expected_result': [{'name': 'bar-ci',
+                                  'branch': 'lp:bar',
+                                  'options': ['--trigger-ci']},
+                                 {'name': 'bar-autolanding',
+                                  'branch': 'lp:bar',
+                                  'options': ['--autoland']}]}),
         ('ci-only',
          {
              'stack': {'ci_default': ci_default,

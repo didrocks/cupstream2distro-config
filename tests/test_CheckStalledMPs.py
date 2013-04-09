@@ -99,6 +99,12 @@ class TestCheckStalledMps(TestCase):
             'compiz': {}},
     }
 
+    no_projects_cfg = {
+        'projects': None,
+        'to_transition': {
+            'compiz': {}},
+    }
+
     def setUp(self):
         super(TestCheckStalledMps, self).setUp()
         self.command = CheckStalledMPs()
@@ -130,6 +136,15 @@ class TestCheckStalledMps(TestCase):
             self.command.process_stacks([1], 120, '')
             self.assertThat(self.command.check_branch.call_count,
                             Equals(2))
+
+    def test_process_stacks_no_projects(self):
+        load_stack_cfg = lambda x, y: self.no_projects_cfg
+        self.command.check_branch = MagicMock()
+        with patch('c2dconfigutils.cu2dWatchDog.load_stack_cfg',
+                   load_stack_cfg):
+            self.command.process_stacks([1], 120, '')
+            self.assertThat(self.command.check_branch.call_count,
+                            Equals(1))
 
     def test_process_stacks_one_stalled(self):
         load_stack_cfg = lambda x, y: self.stack_cfg
