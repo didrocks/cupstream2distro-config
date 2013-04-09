@@ -1,3 +1,10 @@
+cupstream2distro-config (0.3) raring; urgency=low
+
+  * cleanup of orphaned jobs
+    fixes https://bugs.launchpad.net/cupstream2distro-config/+bug/1137768
+
+ -- Chris Gagnon <chris.gagnon@canonical.com>  Thu, 04 Apr 2013 20:23:47 -0400
+
 cupstream2distro-config (0.2) raring; urgency=low
 
   * update or deploy a single project in a stack

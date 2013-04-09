@@ -120,6 +120,12 @@ class UpdateCi(object):
                             dest='project',
                             help='the name of a project in a stack '
                             'to update')
+        parser.add_argument('-o', '--orphan-release', action='store',
+                            dest='orphan_release')
+        parser.add_argument('-c', '--current-release', action='store',
+                            dest='current_release')
+        parser.add_argument('-r', '--remove', action='store_true',
+                            default=False)
         parser.add_argument('stackcfg', help='Path to a configuration file '
                             'for the stack')
         return parser.parse_args()
@@ -307,6 +313,71 @@ class UpdateCi(object):
             logging.error("project: {} was not found".format(target_project))
             return False
 
+    def orphan_search_jenkins(self, jenkins_handle, stack,
+                              current_release=None, target_project=None,
+                              orphan_release=None, remove=False):
+        """search jenkins for projects with orphaned jobs and remove the job
+
+        :param jenkins_handle: jenkins access handle
+        :param stack: dictionary with configuration of the stack
+        :param target_project: target a single project in stack
+        :param current_release: the latest ubuntu development release name
+        :param orphan_release: ubuntu release that has been orphaned by project
+        :param remove: delete all orphaned jobs found
+
+        """
+        if target_project is None:
+            logging.error("target_project cannot be None")
+            return False
+        else:
+            if stack['projects']:
+                #get all jobs from jenkins
+                get_jobs = jenkins_handle.get_jobs()
+                jenk_list = [job['name'] for job in get_jobs]
+
+                #get all jobs from the project stack
+                stack_list = []
+                self.process_stack(stack_list, stack, target_project)
+                stack_list = [job['name'] for job in stack_list]
+
+                #remove jobs from current project stack from jenkins list
+                jenk_list = list(set(jenk_list) - set(stack_list))
+
+                #update the project list with potentially abandoned jobs
+                stack_list = [item.replace(current_release, orphan_release)
+                              for item in stack_list]
+
+                #make a list of the potentially abandon jobs
+                orphan_list = list(set(stack_list) & set(jenk_list))
+                for job in orphan_list:
+                    logging.warning('Potential orphan job found: '
+                                    '{}'.format(job))
+
+                def delete_jobs():
+                    logging.info("Deleting Abandoned jobs")
+                    for job in orphan_list:
+                        jenkins_handle.delete_job(job)
+
+                def get_answer():
+                        answer = raw_input("Do you want to delete orphaned "
+                                           "jobs?\n  Yes or No\nType No if "
+                                           "you are not sure: ")
+                        answer.lower()
+                        if answer == "yes" or answer == "y":
+                                delete_jobs()
+                        elif answer == "no" or answer == "n":
+                            logging.info("Abandoned jobs remain on jenkins")
+                        else:
+                            get_answer()
+                if orphan_list:
+                    if remove:
+                        delete_jobs()
+                    else:
+                        get_answer()
+                else:
+                    logging.info('No abandoned jobs found')
+                return True
+
     def update_jenkins(self, jenkins_handle, jjenv, stack, update=False,
                        target_project=None):
         """ Add/update jenkins jobs
@@ -358,4 +429,13 @@ class UpdateCi(object):
                                        args.update_jobs, args.project):
                 logging.error('Failed to configure jenkins jobs. Aborting!')
                 return 2
+            if args.orphan_release:
+                if args.current_release:
+                    self.orphan_search_jenkins(
+                        jenkins_handle, stackcfg, args.current_release,
+                        args.project, args.orphan_release, args.remove)
+                else:
+                    logging.error("cannot user orphan-release without "
+                                  "current-release")
+                return 1
         return 0

@@ -1,4 +1,4 @@
-from mock import (call, patch, MagicMock)
+from mock import (call, patch, MagicMock, Mock)
 from testscenarios import TestWithScenarios
 from textwrap import dedent
 from unittest import TestCase
@@ -427,3 +427,63 @@ class TestProcessStackIntegration(TestCase):
         result = self.update_ci.process_stack(job_list, self.stack['stack'],
                                               target_project)
         self.assertFalse(result)
+
+    def test_orphan_search_no_target_project(self):
+        result = self.update_ci.orphan_search_jenkins(
+            jenkins_handle=None, stack=None, current_release='raring',
+            target_project=None, orphan_release='quantal', remove=False)
+        self.assertFalse(result)
+
+    def test_orphan_search_with_one_orphan(self):
+        self.jenkins_jobs = [
+            {u'url': u'http://127.0.0.1:8080/job/autopilot-autolanding/',
+             u'color': u'grey', u'name': u'autopilot-autolanding'},
+            {u'url': u'http://127.0.0.1:8080/job/autopilot-ci/',
+             u'color': u'grey', u'name': u'autopilot-ci'},
+            {u'url': u'http://127.0.0.1:8080/job/autopilot-raring-amd64-ci/',
+             u'color': u'grey', u'name': u'autopilot-raring-amd64-ci'},
+            {u'url': u'http://127.0.0.1:8080/job/autopilot-quantal-amd64-ci/',
+             u'color': u'grey', u'name': u'autopilot-quantal-amd64-ci'},
+            {u'url': u'http://127.0.0.1:8080/job/libunity-raring-i386-ci/',
+             u'color': u'grey', u'name': u'autopilot-raring-i386-ci'},
+            {u'url': u'http://127.0.0.1:8080/job/autopilot-raring-armhf-autol'
+             'anding/', u'color': u'grey', u'name': u'autopilot-raring-armhf'
+             '-autolanding'}]
+        self.jenkins_handle = Mock()
+        mock_job_list = {'get_jobs.return_value': list(self.jenkins_jobs)}
+        self.jenkins_handle.configure_mock(**mock_job_list)
+        current_string = 'raring'
+        orphan_string = 'quantal'
+        target_project = 'autopilot'
+        remove = True
+
+        self.update_ci.orphan_search_jenkins(
+            self.jenkins_handle, self.stack['stack'], current_string,
+            target_project, orphan_string, remove)
+        self.assertEqual(self.jenkins_handle.delete_job.call_count, 1)
+
+    def test_orphan_search_without_orphan(self):
+        self.jenkins_jobs = [
+            {u'url': u'http://127.0.0.1:8080/job/autopilot-autolanding/',
+             u'color': u'grey', u'name': u'autopilot-autolanding'},
+            {u'url': u'http://127.0.0.1:8080/job/autopilot-ci/',
+             u'color': u'grey', u'name': u'autopilot-ci'},
+            {u'url': u'http://127.0.0.1:8080/job/autopilot-raring-amd64-ci/',
+             u'color': u'grey', u'name': u'autopilot-raring-amd64-ci'},
+            {u'url': u'http://127.0.0.1:8080/job/libunity-raring-i386-ci/',
+             u'color': u'grey', u'name': u'autopilot-raring-i386-ci'},
+            {u'url': u'http://127.0.0.1:8080/job/autopilot-raring-armhf-autol'
+             'anding/', u'color': u'grey', u'name': u'autopilot-raring-armhf-'
+             'autolanding'}]
+        self.jenkins_handle = Mock()
+        mock_job_list = {'get_jobs.return_value': list(self.jenkins_jobs)}
+        self.jenkins_handle.configure_mock(**mock_job_list)
+        current_string = 'raring'
+        orphan_string = 'quantal'
+        target_project = 'autopilot'
+        remove = True
+
+        self.update_ci.orphan_search_jenkins(
+            self.jenkins_handle, self.stack['stack'], current_string,
+            target_project, orphan_string, remove)
+        self.assertEqual(self.jenkins_handle.delete_job.call_count, 0)
