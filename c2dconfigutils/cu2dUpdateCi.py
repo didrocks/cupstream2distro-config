@@ -435,7 +435,7 @@ class UpdateCi(object):
                         jenkins_handle, stackcfg, args.current_release,
                         args.project, args.orphan_release, args.remove)
                 else:
-                    logging.error("cannot user orphan-release without "
+                    logging.error("cannot use orphan-release without "
                                   "current-release")
                 return 1
         return 0
