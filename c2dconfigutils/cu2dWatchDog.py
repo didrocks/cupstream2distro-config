@@ -81,9 +81,13 @@ class CheckStalledMPs(object):
             stackcfg = load_stack_cfg(stack, default_config)
             if not stackcfg:
                 logging.error('Stack configuration failed to load. Ignoring')
-            elif stackcfg['projects']:
-                for project in stackcfg['projects']:
-                    parameters = stackcfg['projects'][project]
+                break
+            # The 'to_transition' section is used to hold projects that
+            # are not yet prepared for the daily-release process. However,
+            # ci and autolanding is still needed.
+            for section_name in ['projects', 'to_transition']:
+                for project in stackcfg.get(section_name, []):
+                    parameters = stackcfg[section_name][project]
                     target_branch = 'lp:' + project
                     if parameters and 'target_branch' in parameters:
                         target_branch = parameters['target_branch']

@@ -83,15 +83,18 @@ class JobTrigger(object):
         :return trigger_list: list of dicts containing the job trigger details
         """
         trigger_list = []
-        for project_name in stack['projects']:
-            project_config = copy.deepcopy(stack['ci_default'])
-            dict_union(project_config, stack['projects'][project_name])
+        # The 'to_transition' section is used to hold projects that
+        # are not yet prepared for the daily-release process.
+        # However, ci and autolanding is still needed.
+        for section_name in ['projects', 'to_transition']:
+            for project_name in stack.get(section_name, []):
+                project_config = copy.deepcopy(stack['ci_default'])
+                dict_union(project_config, stack[section_name][project_name])
 
-            for job_type in ['ci', 'autolanding']:
-                if project_config.get(job_type + '_template', None):
-                    trigger_list.append(self.generate_trigger(project_name,
-                                                              project_config,
-                                                              job_type))
+                for job_type in ['ci', 'autolanding']:
+                    if project_config.get(job_type + '_template', None):
+                        trigger_list.append(self.generate_trigger(
+                            project_name, project_config, job_type))
         return trigger_list
 
     def trigger_job(self, plugin_path, trigger, lock_name):
