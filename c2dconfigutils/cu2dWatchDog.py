@@ -82,9 +82,6 @@ class CheckStalledMPs(object):
             if not stackcfg:
                 logging.error('Stack configuration failed to load. Ignoring')
                 break
-            # The 'to_transition' section is used to hold projects that
-            # are not yet prepared for the daily-release process. However,
-            # ci and autolanding is still needed.
             for section_name in ['projects']:
                 project_section = stackcfg.get(section_name, [])
                 if project_section is None:
