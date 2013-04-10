@@ -1,7 +1,7 @@
 #!/bin/bash
 set -x
 
-for build_job in {DOWNSTREAM_BUILD_JOB}: do
+for build_job in {DOWNSTREAM_BUILD_JOB}; do
     rm -rf archive || true
     rm -rf ./${{build_job}} || true
     wget -O ${{build_job}}_number.txt &quot;http://localhost:8080/job/${{build_job}}/api/xml?depth=1&amp;xpath=/freeStyleProject/build[action/cause/upstreamProject=\&quot;$JOB_NAME\&quot; and action/cause/upstreamBuild=$BUILD_NUMBER]/number/text()&quot;
