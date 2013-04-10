@@ -135,7 +135,7 @@ class TestCheckStalledMps(TestCase):
                    load_stack_cfg):
             self.command.process_stacks([1], 120, '')
             self.assertThat(self.command.check_branch.call_count,
-                            Equals(2))
+                            Equals(1))
 
     def test_process_stacks_no_projects(self):
         load_stack_cfg = lambda x, y: self.no_projects_cfg
@@ -144,7 +144,7 @@ class TestCheckStalledMps(TestCase):
                    load_stack_cfg):
             self.command.process_stacks([1], 120, '')
             self.assertThat(self.command.check_branch.call_count,
-                            Equals(1))
+                            Equals(0))
 
     def test_process_stacks_one_stalled(self):
         load_stack_cfg = lambda x, y: self.stack_cfg

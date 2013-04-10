@@ -85,7 +85,7 @@ class CheckStalledMPs(object):
             # The 'to_transition' section is used to hold projects that
             # are not yet prepared for the daily-release process. However,
             # ci and autolanding is still needed.
-            for section_name in ['projects', 'to_transition']:
+            for section_name in ['projects']:
                 project_section = stackcfg.get(section_name, [])
                 if project_section is None:
                     continue
