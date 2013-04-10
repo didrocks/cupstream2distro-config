@@ -1,6 +1,9 @@
 #!/bin/bash
 set -x
 
+# cleanup workspace
+rm -rf * || true
+
 for build_job in {DOWNSTREAM_BUILD_JOB}; do
     rm -rf archive || true
     rm -rf ./${{build_job}} || true
@@ -12,5 +15,5 @@ for build_job in {DOWNSTREAM_BUILD_JOB}; do
     wget -O archive.zip $results_url
     unzip archive.zip
     mkdir -p ./${{build_job}} || true
-    mv archive/work/results/* ./${{build_job}}/
+    mv archive/* ./${{build_job}}/
 done
