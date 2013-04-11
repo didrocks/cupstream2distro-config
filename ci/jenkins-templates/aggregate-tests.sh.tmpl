@@ -1,9 +1,19 @@
 #!/bin/bash
 set -x
 
-wget -O downstream_number.txt &quot;http://localhost:8080/job/{DOWNSTREAM_BUILD_JOB}/api/xml?depth=1&amp;xpath=/freeStyleProject/build[action/cause/upstreamProject=\&quot;$JOB_NAME\&quot; and action/cause/upstreamBuild=$BUILD_NUMBER]/number/text()&quot;
+# cleanup workspace
+rm -rf * || true
 
-downstream_number=`cat downstream_number.txt`
-results_url=http://localhost:8080/job/{DOWNSTREAM_BUILD_JOB}/$downstream_number/artifact/test_results.xml
+for build_job in {DOWNSTREAM_BUILD_JOB}; do
+    rm -rf archive || true
+    rm -rf ./${{build_job}} || true
+    wget -O ${{build_job}}_number.txt &quot;http://localhost:8080/job/${{build_job}}/api/xml?depth=1&amp;xpath=/freeStyleProject/build[action/cause/upstreamProject=\&quot;$JOB_NAME\&quot; and action/cause/upstreamBuild=$BUILD_NUMBER]/number/text()&quot;
 
-wget -O test_results.xml $results_url
+    downstream_number=`cat ${{build_job}}_number.txt`
+    results_url=http://localhost:8080/job/${{build_job}}/$downstream_number/artifact/*zip*/archive.zip
+
+    wget -O archive.zip $results_url
+    unzip archive.zip
+    mkdir -p ./${{build_job}} || true
+    mv archive/* ./${{build_job}}/
+done

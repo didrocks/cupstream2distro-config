@@ -83,15 +83,18 @@ class JobTrigger(object):
         :return trigger_list: list of dicts containing the job trigger details
         """
         trigger_list = []
-        for project_name in stack['projects']:
-            project_config = copy.deepcopy(stack['ci_default'])
-            dict_union(project_config, stack['projects'][project_name])
+        for section_name in ['projects']:
+            project_section = stack.get(section_name, [])
+            if project_section is None:
+                continue
+            for project_name in project_section:
+                project_config = copy.deepcopy(stack['ci_default'])
+                dict_union(project_config, stack[section_name][project_name])
 
-            for job_type in ['ci', 'autolanding']:
-                if project_config.get(job_type + '_template', None):
-                    trigger_list.append(self.generate_trigger(project_name,
-                                                              project_config,
-                                                              job_type))
+                for job_type in ['ci', 'autolanding']:
+                    if project_config.get(job_type + '_template', None):
+                        trigger_list.append(self.generate_trigger(
+                            project_name, project_config, job_type))
         return trigger_list
 
     def trigger_job(self, plugin_path, trigger, lock_name):
@@ -135,6 +138,7 @@ class JobTrigger(object):
         if not stackcfg:
             logging.error('Stack configuration failed to load. Aborting!')
             return 1
+        trigger_list = []
         if stackcfg['projects']:
             trigger_list = self.process_stack(stackcfg)
 
