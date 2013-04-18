@@ -83,6 +83,8 @@ class UpdateCi(object):
     ACQUIRE_HOOK_SOURCE_TEMPLATE = 'jenkins-templates/acquire-hooks.sh.tmpl'
     AGGREGATE_TESTS_TEMPLATE = 'jenkins-templates/aggregate-tests.sh.tmpl'
 
+    GENERATED_HOOK_TEMPLATE = 'D09add_ppa~{}'
+
     def __init__(self):
         self.default_config_path = None
 
@@ -140,18 +142,27 @@ class UpdateCi(object):
         parameter = JobParameter(name, value)
         ctx['parameter_list'].append(parameter)
 
-    def process_project_config(self, project_name, project_config):
+    def process_project_config(self, project_name, project_config,
+                               job_data):
         """ Generates the template context from a project configuration
 
         :param project_name: the project name from the stack definition
         :param project_config: dictionary containing the project definition
-        :param configurations: build configurations found in the
-        project_config
+        :param job_data: supplemental data for job generation
 
         :return ctx: template context dict generated from the project_config
         """
         ctx = dict()
         parameters = dict()
+
+        # Patch in the hook for the stack ppa
+        if job_data.get('stack_ppa', False):
+            stack_ppa_hook = self.GENERATED_HOOK_TEMPLATE.format(
+                job_data['stack_ppa'].replace('/', '~'))
+            if project_config.get('hooks', False):
+                project_config['hooks'] = ' '.join([stack_ppa_hook,
+                                                    project_config['hooks']])
+
         for key in project_config:
             data = project_config[key]
 
@@ -195,7 +206,7 @@ class UpdateCi(object):
         return ctx
 
     def generate_jobs(self, job_list, project_name, job_type, job_config,
-                      job_template, build_template):
+                      job_template, build_template, job_data):
         """ Generates the main job and builder jobs for a given project
 
         :param job_list: list to hold the generated jobs
@@ -204,6 +215,7 @@ class UpdateCi(object):
         :param job_config: dictionary containing the job definition
         :param job_template: template used to define the main job
         :param build_template: template used to define the build jobs
+        :param job_data: supplemental data for job generation
         """
 
         job_base_name = get_ci_base_job_name(project_name, job_config)
@@ -233,7 +245,7 @@ class UpdateCi(object):
                 else:
                     dict_union(build_config, data)
                     ctx = self.process_project_config(project_name,
-                                                      build_config)
+                                                      build_config, job_data)
                     build_name = '-'.join([job_base_name, config_name,
                                            job_type])
                     build_list.append(build_name)
@@ -241,7 +253,7 @@ class UpdateCi(object):
                                      'template': template,
                                      'ctx': ctx})
 
-        ctx = self.process_project_config(project_name, job_config)
+        ctx = self.process_project_config(project_name, job_config, job_data)
 
         ctx['builder_list'] = ','.join(build_list)
         job_list.append({'name': job_name,
@@ -251,11 +263,17 @@ class UpdateCi(object):
     def prepare_project(self, job_list, stack, project_name):
         """Prepare by project
 
-
         :param job_list: list to hold the generated jobs
         :param stack: dictionary with configuration of the stack
         :param project_name: a project to update in the stack
         """
+        # If the stack has a ppa value defined, it needs to be added as a
+        # hook to each project
+        stack_ppa = stack.get('ppa', False)
+        if stack_ppa == "null":
+            stack_ppa = False
+        job_data = {'stack_ppa': stack_ppa}
+
         # Merge the default config with the project specific config
         project_config = copy.deepcopy(stack['ci_default'])
         dict_union(project_config, stack['projects'][project_name])
@@ -284,7 +302,7 @@ class UpdateCi(object):
             if ci_only_dict is not None:
                 dict_union(ci_dict, ci_only_dict)
             self.generate_jobs(job_list, project_name, 'ci', ci_dict,
-                               ci_template, build_template)
+                               ci_template, build_template, job_data)
 
         # Create autolanding job, add back in the autolanding dict
         if autolanding_template:
@@ -293,7 +311,7 @@ class UpdateCi(object):
                 dict_union(autolanding_dict, autolanding_only_dict)
             self.generate_jobs(job_list, project_name, 'autolanding',
                                autolanding_dict, autolanding_template,
-                               build_template)
+                               build_template, job_data)
 
     def process_stack(self, job_list, stack, target_project=None):
         """ Process the projects with the stack

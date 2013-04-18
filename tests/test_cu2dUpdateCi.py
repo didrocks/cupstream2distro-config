@@ -80,7 +80,7 @@ class TestProcessProjectConfig(TestCase):
                                                     'lp:project'),
                                        JobParameter('project_name',
                                                     'project')]}
-        actual = self.update_ci.process_project_config('project', config)
+        actual = self.update_ci.process_project_config('project', config, {})
         self.assertEqual(expected, actual)
 
     def test_project_config_forced_target_branch(self):
@@ -91,7 +91,7 @@ class TestProcessProjectConfig(TestCase):
                                        JobParameter('project_name',
                                                     'project')],
                     'project_name': 'project'}
-        actual = self.update_ci.process_project_config('project', config)
+        actual = self.update_ci.process_project_config('project', config, {})
         self.assertEqual(expected, actual)
 
     def test_project_config_ctx_only(self):
@@ -103,7 +103,7 @@ class TestProcessProjectConfig(TestCase):
                                        JobParameter('project_name',
                                                     'project')],
                     'team': 'team_name'}
-        actual = self.update_ci.process_project_config('project', config)
+        actual = self.update_ci.process_project_config('project', config, {})
         self.assertEqual(expected, actual)
 
     def test_project_config_parameter(self):
@@ -117,7 +117,7 @@ class TestProcessProjectConfig(TestCase):
                                                     'some_value'),
                                        JobParameter('project_name',
                                                     'project')]}
-        actual = self.update_ci.process_project_config('project', config)
+        actual = self.update_ci.process_project_config('project', config, {})
         self.assertEqual(expected, actual)
 
     def test_hook_source(self):
@@ -150,10 +150,28 @@ class TestProcessProjectConfig(TestCase):
                    create=True) as mock_open:
             mock_open.return_value = MagicMock(spec=file)
             mock_open().read.return_value = script
-            actual = self.update_ci.process_project_config('project', config)
+            actual = self.update_ci.process_project_config('project', config,
+                                                           {})
             mock_open.assert_called_with(
                 'default/jenkins-templates/acquire-hooks.sh.tmpl', 'r')
             self.assertEqual(expected, actual)
+
+    def test_project_config_stack_ppa(self):
+        config = {'hooks': 'my_hook'}
+        job_data = {'stack_ppa': 'ppa_team/ppa_name'}
+        expected = {'target_branch': 'lp:project',
+                    'project_name': 'project',
+                    'hooks': 'D09add_ppa~ppa_team~ppa_name my_hook',
+                    'parameter_list': [
+                        JobParameter('hooks',
+                                     'D09add_ppa~ppa_team~ppa_name my_hook'),
+                        JobParameter('target_branch',
+                                     'lp:project'),
+                        JobParameter('project_name',
+                                     'project')]}
+        actual = self.update_ci.process_project_config('project', config,
+                                                       job_data)
+        self.assertEqual(expected, actual)
 
 
 class TestGenerateJobs(TestWithScenarios, TestCase):
@@ -173,7 +191,8 @@ class TestGenerateJobs(TestWithScenarios, TestCase):
                     'foo-ci']
         job_list = []
         self.update_ci.generate_jobs(job_list, 'foo', 'ci', config,
-                                     self.job_template, self.build_template)
+                                     self.job_template, self.build_template,
+                                     {})
         actual = [job['name'] for job in job_list]
         self.assertEqual(expected, actual)
 
@@ -187,7 +206,8 @@ class TestGenerateJobs(TestWithScenarios, TestCase):
                     'ci.xml.tmpl']
         job_list = []
         self.update_ci.generate_jobs(job_list, 'foo', 'ci', config,
-                                     self.job_template, self.build_template)
+                                     self.job_template, self.build_template,
+                                     {})
         actual = [job['template'] for job in job_list]
         self.assertEqual(expected, actual)
 
@@ -203,7 +223,8 @@ class TestGenerateJobs(TestWithScenarios, TestCase):
                     'ci.xml.tmpl']
         job_list = []
         self.update_ci.generate_jobs(job_list, 'foo', 'ci', config,
-                                     self.job_template, self.build_template)
+                                     self.job_template, self.build_template,
+                                     {})
         actual = [job['template'] for job in job_list]
         self.assertEqual(expected, actual)
 
@@ -215,7 +236,8 @@ class TestGenerateJobs(TestWithScenarios, TestCase):
         expected = 'foo-raring-amd64-ci,foo-raring-i386-ci'
         job_list = []
         self.update_ci.generate_jobs(job_list, 'foo', 'ci', config,
-                                     self.job_template, self.build_template)
+                                     self.job_template, self.build_template,
+                                     {})
         actual = job_list[2]['ctx']['builder_list']
         self.assertEqual(expected, actual)
 
