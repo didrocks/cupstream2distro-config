@@ -72,6 +72,10 @@ class TestProcessProjectConfig(TestCase):
         self.update_ci = UpdateCi()
         self.update_ci.default_config_path = 'default'
 
+    def _get_build_script_mock(self, template, formatting):
+        test_str = 'DOWNSTREAM_BUILD_JOB = {DOWNSTREAM_BUILD_JOB}'
+        return test_str.format(**formatting)
+
     def test_project_config_implied_target_branch(self):
         config = {}
         expected = {'target_branch': 'lp:project',
@@ -171,6 +175,20 @@ class TestProcessProjectConfig(TestCase):
                                      'project')]}
         actual = self.update_ci.process_project_config('project', config,
                                                        job_data)
+        self.assertEqual(expected, actual)
+
+    def test_project_config_aggregate_tests(self):
+        config = {'aggregate_tests': 'generic-job'}
+        expected = {'target_branch': 'lp:project',
+                    'project_name': 'project',
+                    'aggregate_tests_script':
+                    'DOWNSTREAM_BUILD_JOB = generic-job',
+                    'parameter_list': [JobParameter('target_branch',
+                                                    'lp:project'),
+                                       JobParameter('project_name',
+                                                    'project')]}
+        self.update_ci._get_build_script = self._get_build_script_mock
+        actual = self.update_ci.process_project_config('project', config, {})
         self.assertEqual(expected, actual)
 
 

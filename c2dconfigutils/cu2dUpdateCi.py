@@ -177,7 +177,19 @@ class UpdateCi(object):
                 ctx['acquire_hook_script'] = script
                 parameters[key] = data
             elif key == 'aggregate_tests':
-                formatting = {'DOWNSTREAM_BUILD_JOB': data}
+                # aggregate_tests can be used to specify a specific
+                # job name or a configuration from which to pull artifacts.
+                # If it's a configuration, substitute the actual job name.
+                build_lookup = job_data.get('build_lookup', {})
+                in_list = data.split()
+                out_list = []
+                for agg_job in in_list:
+                    if agg_job in build_lookup:
+                        out_list.append(build_lookup[agg_job])
+                    else:
+                        out_list.append(agg_job)
+
+                formatting = {'DOWNSTREAM_BUILD_JOB': ' '.join(out_list)}
                 script = self._get_build_script(self.AGGREGATE_TESTS_TEMPLATE,
                                                 formatting)
                 ctx['aggregate_tests_script'] = script
@@ -221,6 +233,7 @@ class UpdateCi(object):
         job_base_name = get_ci_base_job_name(project_name, job_config)
         job_name = "-".join([job_base_name, job_type])
         build_list = []
+        job_data['build_lookup'] = {}
         if 'configurations' in job_config:
             configurations = job_config.pop('configurations')
             for config_name in configurations:
@@ -249,6 +262,7 @@ class UpdateCi(object):
                     build_name = '-'.join([job_base_name, config_name,
                                            job_type])
                     build_list.append(build_name)
+                    job_data['build_lookup'][config_name] = build_name
                     job_list.append({'name': build_name,
                                      'template': template,
                                      'ctx': ctx})
