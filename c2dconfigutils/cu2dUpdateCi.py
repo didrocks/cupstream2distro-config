@@ -405,7 +405,7 @@ class UpdateCi(object):
                     logging.info('No abandoned jobs found')
                 return True
 
-    def update_jenkins(self, jenkins_handle, jjenv, stack, 
+    def update_jenkins(self, jenkins_handle, jjenv, stack,
                        target_project=None):
         """ Add/update jenkins jobs
 
