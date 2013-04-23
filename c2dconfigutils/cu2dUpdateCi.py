@@ -100,9 +100,9 @@ class UpdateCi(object):
             epilog=dedent('''\
                 Example:
                 To update the indicator stack run the following command:
-                    $ ./cu2d-update-ci -dU ./etc/indicators-head.cfg
+                    $ ./cu2d-update-ci -d ./etc/indicators-head.cfg
                 To update a project in the indicator stack run:
-                    $ ./cu2d-update-ci -U -p aproject ./etc/indicators-head.cfg
+                    $ ./cu2d-update-ci -p aproject ./etc/indicators-head.cfg
                 '''),
             formatter_class=argparse.RawTextHelpFormatter)
         parser.add_argument('-C', '--credentials', metavar='CREDENTIALFILE',
@@ -110,11 +110,6 @@ class UpdateCi(object):
                             help='use Jenkins and load credentials from '
                             'CREDENTIAL FILE\n(default: %s)' %
                             self.DEFAULT_CREDENTIALS)
-        parser.add_argument('-U', '--update-jobs', action='store_true',
-                            default=False,
-                            help='by default only new jobs are added. This '
-                            'option enables \nupdate of existing jobs from '
-                            'configuration template.')
         parser.add_argument('-d', '--debug', action='store_true',
                             default=False,
                             help='enable debug mode')
@@ -410,14 +405,13 @@ class UpdateCi(object):
                     logging.info('No abandoned jobs found')
                 return True
 
-    def update_jenkins(self, jenkins_handle, jjenv, stack, update=False,
+    def update_jenkins(self, jenkins_handle, jjenv, stack,
                        target_project=None):
         """ Add/update jenkins jobs
 
         :param jenkins_handle: jenkins access handle
         :param jjenv: jinja2 template environment handle
         :param stack: dictionary with configuration of the stack
-        :param update: Update existing jobs if true
 
         :return: True on success
         """
@@ -425,8 +419,9 @@ class UpdateCi(object):
             job_list = []
             self.process_stack(job_list, stack, target_project)
             for job in job_list:
+                # setup_job send True for updates
                 setup_job(jenkins_handle, jjenv, job['name'], job['template'],
-                          job['ctx'], update)
+                          job['ctx'], True)
         return True
 
     def __call__(self, default_config_path):
@@ -458,7 +453,7 @@ class UpdateCi(object):
                 return 1
             jjenv = get_jinja_environment(default_config_path, stackcfg)
             if not self.update_jenkins(jenkins_handle, jjenv, stackcfg,
-                                       args.update_jobs, args.project):
+                                       args.project):
                 logging.error('Failed to configure jenkins jobs. Aborting!')
                 return 2
             if args.orphan_release:
