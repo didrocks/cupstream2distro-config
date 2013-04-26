@@ -152,6 +152,7 @@ test_result=PASSED</properties>
     </hudson.tasks.Mailer>
 {% endif %}
 {% if irc_channel %}
+    {% if irc_notification %}
     <hudson.plugins.ircbot.IrcPublisher>
       <targets>
         <hudson.plugins.im.GroupChatIMMessageTarget>
@@ -169,6 +170,7 @@ test_result=PASSED</properties>
       <matrixMultiplier>ONLY_CONFIGURATIONS</matrixMultiplier>
       <channels/>
     </hudson.plugins.ircbot.IrcPublisher>
+    {% endif %}
 {% endif %}
 {% if publish %}
     <hudson.plugins.build__publisher.BuildPublisher>
