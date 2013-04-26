@@ -164,8 +164,7 @@ scp * ${local_archive_login}@${local_archive_host}:${tmp_dir}/${JOB_NAME}</comma
       <sendToIndividuals>false</sendToIndividuals>
     </hudson.tasks.Mailer>
 {% endif %}
-{% if irc_channel %}
-    {% if irc_notification %}
+{% if irc_channel and irc_notification %}
     <hudson.plugins.ircbot.IrcPublisher>
       <targets>
         <hudson.plugins.im.GroupChatIMMessageTarget>
@@ -183,7 +182,6 @@ scp * ${local_archive_login}@${local_archive_host}:${tmp_dir}/${JOB_NAME}</comma
       <matrixMultiplier>ONLY_CONFIGURATIONS</matrixMultiplier>
       <channels/>
     </hudson.plugins.ircbot.IrcPublisher>
-    {% endif %}
 {% endif %}
 {% if publish %}
     <hudson.plugins.build__publisher.BuildPublisher>
