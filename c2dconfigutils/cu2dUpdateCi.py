@@ -77,6 +77,8 @@ class UpdateCi(object):
         'log_rotator',
         'days_to_keep_builds',
         'num_to_keep_builds',
+        'irc_notification',
+        'irc_channel',
     ]
 
     DEFAULT_HOOK_LOCATION = '/tmp/$JOB_NAME-hooks'
