@@ -159,6 +159,8 @@ class UpdateCi(object):
             if project_config.get('hooks', False):
                 project_config['hooks'] = ' '.join([stack_ppa_hook,
                                                     project_config['hooks']])
+            else:
+                project_config['hooks'] = stack_ppa_hook
 
         for key in project_config:
             data = project_config[key]
