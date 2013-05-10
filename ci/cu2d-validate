@@ -1,0 +1,39 @@
+#!/usr/bin/env python
+""" Validate stack config for obvious errors
+
+- Reads stack configuration from YAML configuration files
+- performs validation checks
+
+"""
+# Copyright (C) 2013, Canonical Ltd (http://www.canonical.com/)
+#
+# Author: Martin Mrazik <martin.mrazik@canonical.com>
+#
+# This software is free software: you can redistribute it
+# and/or modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation, either version 3 of
+# the License, or (at your option) any later version.
+#
+# This software is distributed in the hope that it will
+# be useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+# of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this software.  If not, see <http://www.gnu.org/licenses/>.
+
+import sys
+import os
+
+BASEDIR = os.path.dirname(__file__)
+
+# add local c2configutils
+if os.path.isdir(os.path.join(BASEDIR, '../c2dconfigutils')):
+    sys.path.insert(0, os.path.join(BASEDIR, '..'))
+
+from c2dconfigutils.cu2dValidator import StacksValidator
+
+
+if __name__ == "__main__":
+    command = StacksValidator()
+    sys.exit(command(BASEDIR))
