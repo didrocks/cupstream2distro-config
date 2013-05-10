@@ -207,12 +207,12 @@ class TestTriggerBranch(TestWithScenarios, TestCase):
         """trigger_project must call self.trigger_job"""
         jt = JobTrigger()
         trigger = ['']
-        jt.get_trigger = MagicMock(return_value=trigger)
+        jt.get_trigger_for_target = MagicMock(return_value=trigger)
         jt.trigger_job = MagicMock()
         jt.trigger_project(self.plugin_path, self.default_config,
                            self.target_branch, self.stackcfg_dir,
                            self.trigger_type)
-        jt.get_trigger.assert_called_once_with(
+        jt.get_trigger_for_target.assert_called_once_with(
             self.default_config, self.target_branch,
             self.stackcfg_dir, self.trigger_type)
         jt.trigger_job.assert_called_once_with(self.plugin_path, trigger,
@@ -222,7 +222,7 @@ class TestTriggerBranch(TestWithScenarios, TestCase):
            new=MagicMock(return_value=[('../stacks/head','',('unity.cfg'))]))
     @patch('fnmatch.filter', new=lambda x,y: ['unity.cfg'])
     @patch('c2dconfigutils.cu2dTrigger.load_stack_cfg')
-    def test_get_trigger(self, load_stack_cfg):
+    def test_get_trigger_for_target(self, load_stack_cfg):
         jt = JobTrigger()
         stackcfg = {
             'ci_default': {
@@ -235,8 +235,10 @@ class TestTriggerBranch(TestWithScenarios, TestCase):
             }
         }
         load_stack_cfg.return_value = stackcfg
-        trigger = jt.get_trigger(self.default_config, self.target_branch,
-                                 self.stackcfg_dir, self.trigger_type)
+        trigger = jt.get_trigger_for_target(self.default_config,
+                                            self.target_branch,
+                                            self.stackcfg_dir,
+                                            self.trigger_type)
         expected_trigger = {
             'name': 'branch-{}'.format(self.trigger_type),
             'branch': self.target_branch,
@@ -249,8 +251,10 @@ class TestTriggerBranch(TestWithScenarios, TestCase):
     @patch('fnmatch.filter', new=lambda x,y: [])
     def test_get_trigger_for_nonexisting_project(self):
         jt = JobTrigger()
-        trigger = jt.get_trigger(self.default_config, self.target_branch,
-                                 self.stackcfg_dir, self.trigger_type)
+        trigger = jt.get_trigger_for_target(self.default_config,
+                                            self.target_branch,
+                                            self.stackcfg_dir,
+                                            self.trigger_type)
         self.assertEqual(trigger, None)
 
 

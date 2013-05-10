@@ -164,8 +164,8 @@ class JobTrigger(object):
             self.trigger_job(plugin_path, trigger, lock_name)
         return 0
 
-    def get_trigger(self, default_config, target_branch, stackcfg_dir,
-                    trigger_type):
+    def get_trigger_for_target(self, default_config, target_branch,
+                               stackcfg_dir, trigger_type):
         stacks = []
         for root, dirnames, filenames in os.walk(stackcfg_dir):
           for filename in fnmatch.filter(filenames, '*.cfg'):
@@ -191,8 +191,8 @@ class JobTrigger(object):
     def trigger_project(self, plugin_path, default_config, trigger_branch,
                         stackcfg_dir, trigger_type):
 
-        trigger = self.get_trigger(default_config, trigger_branch,
-                                   stackcfg_dir, trigger_type)
+        trigger = self.get_trigger_for_target(default_config, trigger_branch,
+                                              stackcfg_dir, trigger_type)
         self.trigger_job(plugin_path, trigger, lock_name='target-branch')
 
 
