@@ -168,8 +168,8 @@ class JobTrigger(object):
                                stackcfg_dir, trigger_type):
         stacks = []
         for root, dirnames, filenames in os.walk(stackcfg_dir):
-          for filename in fnmatch.filter(filenames, '*.cfg'):
-              stacks.append(os.path.join(root, filename))
+            for filename in fnmatch.filter(filenames, '*.cfg'):
+                stacks.append(os.path.join(root, filename))
         for stack in stacks:
             stackcfg = deepcopy(default_config)
             stackcfg = load_stack_cfg(stack, stackcfg)
@@ -194,7 +194,6 @@ class JobTrigger(object):
         trigger = self.get_trigger_for_target(default_config, trigger_branch,
                                               stackcfg_dir, trigger_type)
         self.trigger_job(plugin_path, trigger, lock_name='target-branch')
-
 
     def __call__(self, default_config_path):
         """Entry point for cu2d-trigger"""
