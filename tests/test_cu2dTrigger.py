@@ -202,7 +202,6 @@ class TestTriggerBranch(TestWithScenarios, TestCase):
     stackcfg_dir = '../stacks'
     target_branch = 'lp:branch'
 
-
     def test_trigger_project(self):
         """trigger_project must call self.trigger_job"""
         jt = JobTrigger()
@@ -219,8 +218,8 @@ class TestTriggerBranch(TestWithScenarios, TestCase):
                                                lock_name='target-branch')
 
     @patch('os.walk',
-           new=MagicMock(return_value=[('../stacks/head','',('unity.cfg'))]))
-    @patch('fnmatch.filter', new=lambda x,y: ['unity.cfg'])
+           new=MagicMock(return_value=[('../stacks/head', '', ('unity.cfg'))]))
+    @patch('fnmatch.filter', new=lambda x, y: ['unity.cfg'])
     @patch('c2dconfigutils.cu2dTrigger.load_stack_cfg')
     def test_get_trigger_for_target(self, load_stack_cfg):
         jt = JobTrigger()
@@ -247,8 +246,8 @@ class TestTriggerBranch(TestWithScenarios, TestCase):
         self.assertEqual(trigger, expected_trigger)
 
     @patch('os.walk',
-           new=MagicMock(return_value=[('../stacks/head','',('unity.cfg'))]))
-    @patch('fnmatch.filter', new=lambda x,y: [])
+           new=MagicMock(return_value=[('../stacks/head', '', ('unity.cfg'))]))
+    @patch('fnmatch.filter', new=lambda x, y: [])
     def test_get_trigger_for_nonexisting_project(self):
         jt = JobTrigger()
         trigger = jt.get_trigger_for_target(self.default_config,
@@ -303,7 +302,7 @@ class TestCall(TestCase):
             jt.trigger_project = MagicMock()
             jt('')
             jt.trigger_project.assert_called_once_with(plugin_path, {}, branch,
-                    cfg_dir, 'autolanding')
+                                                       cfg_dir, 'autolanding')
 
     @patch('c2dconfigutils.cu2dTrigger.load_default_cfg')
     def test_trigger_ci(self, load_default_cfg):
@@ -318,5 +317,4 @@ class TestCall(TestCase):
             jt.trigger_project = MagicMock()
             jt('')
             jt.trigger_project.assert_called_once_with(plugin_path, {}, branch,
-                    cfg_dir, 'ci')
-
+                                                       cfg_dir, 'ci')
