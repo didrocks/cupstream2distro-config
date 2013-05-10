@@ -66,7 +66,7 @@ class StacksValidator(object):
             stacks_config[stack] = stackcfg
         return stacks_config
 
-    def check_duplicate_targets(self, stacks):
+    def has_duplicate_targets(self, stacks):
         target_branches = {}
         conflict = False
         for stack in stacks:
@@ -74,32 +74,34 @@ class StacksValidator(object):
             if 'projects' not in stackcfg or stackcfg['projects'] is None:
                 continue
             for project in stackcfg['projects']:
-                project_config = copy.deepcopy(stackcfg['ci_default'])
+                if 'ci_default' in stackcfg:
+                    project_config = copy.deepcopy(stackcfg['ci_default'])
+                else:
+                    project_config = {}
                 dict_union(project_config, stackcfg['projects'][project])
-                if project_config:
-                    target_branch = project_config.get(
-                        'target_branch',
-                        'lp:{}'.format(project))
-                    if target_branch in target_branches:
-                        existing = target_branches[target_branch]
-                        logging.error(
-                            "Conflict detected: {target} defined in "
-                            "{stack}:{project} and {new_stack}:{new_project})"
-                            "".format(
-                                target=target_branch,
-                                stack=existing['stack'],
-                                new_stack=stack,
-                                new_project=project,
-                                project=existing['project']))
-                        target_branches[target_branch]['project'] = project
-                        target_branches[target_branch]['project'] = project
-                        target_branches[target_branch]['project'] = project
-                        conflict = True
-                    else:
-                        target_branches[target_branch] = {
-                            'stack': stack,
-                            'project': project
-                        }
+                target_branch = project_config.get(
+                    'target_branch',
+                    'lp:{}'.format(project))
+                if target_branch in target_branches:
+                    existing = target_branches[target_branch]
+                    logging.error(
+                        "Conflict detected: {target} defined in "
+                        "{stack}:{project} and {new_stack}:{new_project})"
+                        "".format(
+                            target=target_branch,
+                            stack=existing['stack'],
+                            new_stack=stack,
+                            new_project=project,
+                            project=existing['project']))
+                    target_branches[target_branch]['project'] = project
+                    target_branches[target_branch]['project'] = project
+                    target_branches[target_branch]['project'] = project
+                    conflict = True
+                else:
+                    target_branches[target_branch] = {
+                        'stack': stack,
+                        'project': project
+                    }
 
         return conflict
 
@@ -110,4 +112,8 @@ class StacksValidator(object):
         set_logging(args.debug)
         stacks = self.load_stacks(default_config_path, args.stackcfg_dir)
         ret = True
-        ret = ret and self.check_duplicate_targets(stacks)
+        # check for different projects which share the same target_branch
+        ret = ret and self.has_duplicate_targets(stacks)
+        # check for xxx
+        # ret = ret and self.
+        return ret
