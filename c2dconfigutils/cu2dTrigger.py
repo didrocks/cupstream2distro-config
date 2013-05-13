@@ -26,6 +26,8 @@ import logging
 import copy
 import os
 import subprocess
+import fnmatch
+from copy import deepcopy
 
 from c2dconfigutils import (
     dict_union, load_default_cfg, load_stack_cfg, set_logging,
@@ -34,6 +36,7 @@ from c2dconfigutils import (
 
 class JobTrigger(object):
     DEFAULT_PLUGIN_PATH = '/var/lib/jenkins/jenkins-launchpad-plugin/'
+    DEFAULT_STACKS_CFG_PATH = '../stacks/'
 
     def parse_arguments(self):
         """ Parses the command line arguments
@@ -50,9 +53,28 @@ class JobTrigger(object):
                             self.DEFAULT_PLUGIN_PATH)
         parser.add_argument('-d', '--debug', action='store_true',
                             default=False, help='enable debug mode')
-        parser.add_argument('stackcfg',
-                            help='Path to a configuration file for the stack')
-        return parser.parse_args()
+        parser.add_argument('-D', '--stackcfg-dir',
+                            default=self.DEFAULT_STACKS_CFG_PATH,
+                            help='Path to directory with stacks definition. ' +
+                            'Useful when using -c or -l ' +
+                            '(default: {}).'.format(
+                                self.DEFAULT_STACKS_CFG_PATH))
+        parser.add_argument('-c', '--trigger-ci',
+                            default=None,
+                            help='trigger ci job on the defined target branch')
+        parser.add_argument('-l', '--trigger-autolanding',
+                            default=None,
+                            help='Trigger autolanding on the defined' +
+                            ' target branch')
+        parser.add_argument('stackcfg', nargs='?',
+                            help='Path to a configuration file for the stack',
+                            default=None)
+        args = parser.parse_args()
+
+        if not args.stackcfg and \
+                not args.trigger_ci and not args.trigger_autolanding:
+            parser.error('One of -c, -l or stackcfg must be defined')
+        return args
 
     def generate_trigger(self, project_name, project_config, job_type):
         """ Generate a job trigger from a single project definition
@@ -128,13 +150,8 @@ class JobTrigger(object):
         else:
             return result
 
-    def __call__(self, default_config_path):
-        """Entry point for cu2d-trigger"""
-        args = self.parse_arguments()
-
-        set_logging(args.debug)
-        default_config = load_default_cfg(default_config_path)
-        stackcfg = load_stack_cfg(args.stackcfg, default_config)
+    def trigger_stack(self, default_config, stackcfg, plugin_path):
+        stackcfg = load_stack_cfg(stackcfg, default_config)
         if not stackcfg:
             logging.error('Stack configuration failed to load. Aborting!')
             return 1
@@ -142,6 +159,64 @@ class JobTrigger(object):
         if stackcfg['projects']:
             trigger_list = self.process_stack(stackcfg)
 
-        lock_name = self._get_lock_name(args.stackcfg)
+        lock_name = self._get_lock_name(stackcfg)
         for trigger in trigger_list:
-            self.trigger_job(args.plugin_path, trigger, lock_name)
+            self.trigger_job(plugin_path, trigger, lock_name)
+        return 0
+
+    def get_trigger_for_target(self, default_config, target_branch,
+                               stackcfg_dir, trigger_type):
+        stacks = []
+        for root, dirnames, filenames in os.walk(stackcfg_dir):
+            for filename in fnmatch.filter(filenames, '*.cfg'):
+                stacks.append(os.path.join(root, filename))
+        for stack in stacks:
+            stackcfg = deepcopy(default_config)
+            stackcfg = load_stack_cfg(stack, stackcfg)
+            if 'projects' not in stackcfg or not stackcfg['projects']:
+                continue
+
+            for project in stackcfg['projects']:
+                project_config = copy.deepcopy(stackcfg['ci_default'])
+                dict_union(project_config, stackcfg['projects'][project])
+                if project_config:
+                    project_target_branch = project_config.get(
+                        'target_branch',
+                        'lp:{}'.format(project))
+                    if target_branch == project_target_branch:
+                        trigger = self.generate_trigger(project,
+                                                        project_config,
+                                                        trigger_type)
+                        return trigger
+        logging.error('No configuration found for {}.'.format(target_branch))
+        return None
+
+    def trigger_project(self, plugin_path, default_config, trigger_branch,
+                        stackcfg_dir, trigger_type):
+
+        trigger = self.get_trigger_for_target(default_config, trigger_branch,
+                                              stackcfg_dir, trigger_type)
+        if not trigger:
+            return 1
+        self.trigger_job(plugin_path, trigger, lock_name='target-branch')
+        return 0
+
+    def __call__(self, default_config_path):
+        """Entry point for cu2d-trigger"""
+        args = self.parse_arguments()
+
+        set_logging(args.debug)
+        default_config = load_default_cfg(default_config_path)
+        if args.stackcfg:
+            return self.trigger_stack(default_config,
+                                      args.stackcfg,
+                                      args.plugin_path)
+        if args.trigger_autolanding:
+            trigger_type = 'autolanding'
+            trigger_branch = args.trigger_autolanding
+        else:
+            trigger_type = 'ci'
+            trigger_branch = args.trigger_ci
+        return self.trigger_project(args.plugin_path, default_config,
+                                    trigger_branch, args.stackcfg_dir,
+                                    trigger_type)
