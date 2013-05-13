@@ -151,6 +151,7 @@ class JobTrigger(object):
             return result
 
     def trigger_stack(self, default_config, stackcfg, plugin_path):
+        lock_name = self._get_lock_name(stackcfg)
         stackcfg = load_stack_cfg(stackcfg, default_config)
         if not stackcfg:
             logging.error('Stack configuration failed to load. Aborting!')
@@ -159,7 +160,6 @@ class JobTrigger(object):
         if stackcfg['projects']:
             trigger_list = self.process_stack(stackcfg)
 
-        lock_name = self._get_lock_name(stackcfg)
         for trigger in trigger_list:
             self.trigger_job(plugin_path, trigger, lock_name)
         return 0
