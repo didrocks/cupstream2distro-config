@@ -195,7 +195,10 @@ class JobTrigger(object):
 
         trigger = self.get_trigger_for_target(default_config, trigger_branch,
                                               stackcfg_dir, trigger_type)
+        if not trigger:
+            return 1
         self.trigger_job(plugin_path, trigger, lock_name='target-branch')
+        return 0
 
     def __call__(self, default_config_path):
         """Entry point for cu2d-trigger"""
@@ -213,5 +216,6 @@ class JobTrigger(object):
         else:
             trigger_type = 'ci'
             trigger_branch = args.trigger_ci
-        self.trigger_project(args.plugin_path, default_config, trigger_branch,
-                             args.stackcfg_dir, trigger_type)
+        return self.trigger_project(args.plugin_path, default_config,
+                                    trigger_branch, args.stackcfg_dir,
+                                    trigger_type)
