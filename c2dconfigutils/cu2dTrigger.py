@@ -188,7 +188,7 @@ class JobTrigger(object):
                                                         project_config,
                                                         trigger_type)
                         return trigger
-        logging.debug('No configuration found for {}.'.format(target_branch))
+        logging.error('No configuration found for {}.'.format(target_branch))
         return None
 
     def trigger_project(self, plugin_path, default_config, trigger_branch,
