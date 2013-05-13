@@ -229,6 +229,7 @@ class TestTriggerBranch(TestWithScenarios, TestCase):
                                  self.target_branch, self.stackcfg_dir,
                                  self.trigger_type)
         self.assertEqual(ret, 1)
+        jt.trigger_job.assert_has_calls([])
 
     @patch('os.walk',
            new=MagicMock(return_value=[('../stacks/head', '', ('unity.cfg'))]))
