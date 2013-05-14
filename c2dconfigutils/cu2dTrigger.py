@@ -151,6 +151,7 @@ class JobTrigger(object):
             return result
 
     def trigger_stack(self, default_config, stackcfg, plugin_path):
+        lock_name = self._get_lock_name(stackcfg)
         stackcfg = load_stack_cfg(stackcfg, default_config)
         if not stackcfg:
             logging.error('Stack configuration failed to load. Aborting!')
@@ -159,7 +160,6 @@ class JobTrigger(object):
         if stackcfg['projects']:
             trigger_list = self.process_stack(stackcfg)
 
-        lock_name = self._get_lock_name(stackcfg)
         for trigger in trigger_list:
             self.trigger_job(plugin_path, trigger, lock_name)
         return 0
@@ -173,19 +173,22 @@ class JobTrigger(object):
         for stack in stacks:
             stackcfg = deepcopy(default_config)
             stackcfg = load_stack_cfg(stack, stackcfg)
-            if 'projects' in stackcfg and stackcfg['projects']:
-                for project in stackcfg['projects']:
-                    project_config = copy.deepcopy(stackcfg['ci_default'])
-                    dict_union(project_config, stackcfg['projects'][project])
-                    if project_config:
-                        project_target_branch = project_config.get(
-                            'target_branch',
-                            'lp:{}'.format(project))
-                        if target_branch == project_target_branch:
-                            trigger = self.generate_trigger(project,
-                                                            project_config,
-                                                            trigger_type)
-                            return trigger
+            if 'projects' not in stackcfg or not stackcfg['projects']:
+                continue
+
+            for project in stackcfg['projects']:
+                project_config = copy.deepcopy(stackcfg['ci_default'])
+                dict_union(project_config, stackcfg['projects'][project])
+                if project_config:
+                    project_target_branch = project_config.get(
+                        'target_branch',
+                        'lp:{}'.format(project))
+                    if target_branch == project_target_branch:
+                        trigger = self.generate_trigger(project,
+                                                        project_config,
+                                                        trigger_type)
+                        return trigger
+        logging.error('No configuration found for {}.'.format(target_branch))
         return None
 
     def trigger_project(self, plugin_path, default_config, trigger_branch,
@@ -193,7 +196,10 @@ class JobTrigger(object):
 
         trigger = self.get_trigger_for_target(default_config, trigger_branch,
                                               stackcfg_dir, trigger_type)
+        if not trigger:
+            return 1
         self.trigger_job(plugin_path, trigger, lock_name='target-branch')
+        return 0
 
     def __call__(self, default_config_path):
         """Entry point for cu2d-trigger"""
@@ -211,5 +217,6 @@ class JobTrigger(object):
         else:
             trigger_type = 'ci'
             trigger_branch = args.trigger_ci
-        self.trigger_project(args.plugin_path, default_config, trigger_branch,
-                             args.stackcfg_dir, trigger_type)
+        return self.trigger_project(args.plugin_path, default_config,
+                                    trigger_branch, args.stackcfg_dir,
+                                    trigger_type)

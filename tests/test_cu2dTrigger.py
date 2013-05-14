@@ -203,19 +203,33 @@ class TestTriggerBranch(TestWithScenarios, TestCase):
     target_branch = 'lp:branch'
 
     def test_trigger_project(self):
-        """trigger_project must call self.trigger_job"""
+        """trigger_project must call self.trigger_job and return 0"""
         jt = JobTrigger()
         trigger = ['']
         jt.get_trigger_for_target = MagicMock(return_value=trigger)
         jt.trigger_job = MagicMock()
-        jt.trigger_project(self.plugin_path, self.default_config,
-                           self.target_branch, self.stackcfg_dir,
-                           self.trigger_type)
+        ret = jt.trigger_project(self.plugin_path, self.default_config,
+                                 self.target_branch, self.stackcfg_dir,
+                                 self.trigger_type)
         jt.get_trigger_for_target.assert_called_once_with(
             self.default_config, self.target_branch,
             self.stackcfg_dir, self.trigger_type)
         jt.trigger_job.assert_called_once_with(self.plugin_path, trigger,
                                                lock_name='target-branch')
+        self.assertEqual(ret, 0)
+
+    def test_trigger_project_with_no_trigger(self):
+        """trigger_project must return 1 if get_trigger_for_target doesn't
+        return a trigger"""
+        jt = JobTrigger()
+        trigger = None
+        jt.get_trigger_for_target = MagicMock(return_value=trigger)
+        jt.trigger_job = MagicMock()
+        ret = jt.trigger_project(self.plugin_path, self.default_config,
+                                 self.target_branch, self.stackcfg_dir,
+                                 self.trigger_type)
+        self.assertEqual(ret, 1)
+        jt.trigger_job.assert_has_calls([])
 
     @patch('os.walk',
            new=MagicMock(return_value=[('../stacks/head', '', ('unity.cfg'))]))
