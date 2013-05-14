@@ -117,9 +117,8 @@ class StacksValidator(object):
             logging.debug("No stack configuration found. Try to specify " +
                           "the stack directory with -D.")
             return 1
-        ret = True
-        # check for different projects which share the same target_branch
-        ret = ret and self.has_duplicate_targets(stacks)
-        # check for xxx
-        # ret = ret and self.
-        return 0 if ret else 1
+        ret = 0
+        # check for different projects which share the same target_branches
+        if self.has_duplicate_targets(stacks):
+            ret = 1
+        return ret

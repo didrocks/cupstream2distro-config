@@ -75,11 +75,6 @@ class TestCheckDuplicateTargets(TestWithScenarios, TestCase):
                  }
              }
          }),
-        ('no_stacks',
-         {
-             'expected': False,
-             'stacks': {}
-         }),
     ]
 
     def setUp(self):
@@ -93,7 +88,7 @@ class TestCheckDuplicateTargets(TestWithScenarios, TestCase):
         validator = StacksValidator()
         validator.load_stacks = lambda x, y: self.stacks
         validator.parse_arguments = lambda: MagicMock()
-        self.assertEqual(0 if self.expected else 1, validator(''))
+        self.assertEqual(1 if self.expected else 0, validator(''))
 
 
 class TestLoadStacks(TestCase):
@@ -113,6 +108,12 @@ class TestLoadStacks(TestCase):
         self.assertEqual(expected,
                          validator.load_stacks('', ''))
 
+    def test_call_with_no_stacks(self):
+        """call to the command must return 1 in case no stacks were loaded"""
+        validator = StacksValidator()
+        validator.load_stacks = lambda x, y: {}
+        validator.parse_arguments = lambda: MagicMock()
+        self.assertEqual(1, validator(''))
 
 class TestCall(TestCase):
     def test_gibberish(self):
