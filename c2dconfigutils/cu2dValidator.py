@@ -60,6 +60,7 @@ class StacksValidator(object):
         for root, dirnames, filenames in os.walk(stackcfg_dir):
             for filename in fnmatch.filter(filenames, '*.cfg'):
                 stacks.append(os.path.join(root, filename))
+
         for stack in stacks:
             stackcfg = deepcopy(default_config)
             stackcfg = load_stack_cfg(stack, stackcfg)
@@ -67,8 +68,9 @@ class StacksValidator(object):
         return stacks_config
 
     def has_duplicate_targets(self, stacks):
+        logging.debug("Starting check for duplicate target branches")
         target_branches = {}
-        conflict = False
+        conflicts = 0
         for stack in stacks:
             stackcfg = stacks[stack]
             if 'projects' not in stackcfg or stackcfg['projects'] is None:
@@ -94,16 +96,16 @@ class StacksValidator(object):
                             new_project=project,
                             project=existing['project']))
                     target_branches[target_branch]['project'] = project
-                    target_branches[target_branch]['project'] = project
-                    target_branches[target_branch]['project'] = project
-                    conflict = True
+                    conflicts = conflicts + 1
                 else:
                     target_branches[target_branch] = {
                         'stack': stack,
                         'project': project
                     }
 
-        return conflict
+        logging.debug("Check for duplicate target branches finished. " +
+                      "{} conflict(s) found.".format(conflicts))
+        return conflicts > 0
 
     def __call__(self, default_config_path):
         """Entry point for cu2d-trigger"""
@@ -111,9 +113,13 @@ class StacksValidator(object):
 
         set_logging(args.debug)
         stacks = self.load_stacks(default_config_path, args.stackcfg_dir)
+        if not stacks:
+            logging.debug("No stack configuration found. Try to specify " +
+                          "the stack directory with -D.")
+            return 1
         ret = True
         # check for different projects which share the same target_branch
         ret = ret and self.has_duplicate_targets(stacks)
         # check for xxx
         # ret = ret and self.
-        return ret
+        return 0 if ret else 1

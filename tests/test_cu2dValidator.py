@@ -75,6 +75,11 @@ class TestCheckDuplicateTargets(TestWithScenarios, TestCase):
                  }
              }
          }),
+        ('no_stacks',
+         {
+             'expected': False,
+             'stacks': {}
+         }),
     ]
 
     def setUp(self):
@@ -88,7 +93,7 @@ class TestCheckDuplicateTargets(TestWithScenarios, TestCase):
         validator = StacksValidator()
         validator.load_stacks = lambda x, y: self.stacks
         validator.parse_arguments = lambda: MagicMock()
-        self.assertEqual(self.expected, validator(''))
+        self.assertEqual(0 if self.expected else 1, validator(''))
 
 
 class TestLoadStacks(TestCase):
