@@ -178,11 +178,14 @@ class UpdateCi(object):
             elif key == 'aggregate_tests':
                 # aggregate_tests can be used to specify a specific
                 # job name or a configuration from which to pull artifacts.
-                # If it's a configuration, substitute the actual job name.
+                if not data:
+                    # This allows a project to undefine a default value
+                    continue
                 build_lookup = job_data.get('build_lookup', {})
                 in_list = data.split()
                 out_list = []
                 for agg_job in in_list:
+                    # If it's a configuration, substitute the actual job name.
                     if agg_job in build_lookup:
                         out_list.append(build_lookup[agg_job])
                     else:
