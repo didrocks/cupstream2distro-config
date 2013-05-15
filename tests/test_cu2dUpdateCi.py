@@ -225,6 +225,18 @@ class TestProcessProjectConfig(TestCase):
         actual = self.update_ci.process_project_config('project', config, {})
         self.assertEqual(expected, actual)
 
+    def test_project_config_aggregate_tests_undefined(self):
+        config = {'aggregate_tests': False}
+        expected = {'target_branch': 'lp:project',
+                    'project_name': 'project',
+                    'parameter_list': [JobParameter('target_branch',
+                                                    'lp:project'),
+                                       JobParameter('project_name',
+                                                    'project')]}
+        self.update_ci._get_build_script = self._get_build_script_mock
+        actual = self.update_ci.process_project_config('project', config, {})
+        self.assertEqual(expected, actual)
+
 
 class TestGenerateJobs(TestWithScenarios, TestCase):
     job_template = 'ci.xml.tmpl'
