@@ -71,7 +71,7 @@ fi
 
 JOBROOT={{ extracheck }}
 
-for card in ati intel nvidia; do
+for card in ati intel; do
     echo &quot;Calculating results for card $card&quot;
     JUNIT=$({{ BINDIR }}/latest_autopilot_results $JOBROOT $card)
     RET=$?
