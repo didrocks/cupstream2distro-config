@@ -61,24 +61,25 @@ class UpdateCi(object):
         'concurrent_jenkins_builds',
         'configuration',
         'contact_email',
+        'days_to_keep_builds',
         'disabled',
         'fasttrack',
         'hook_source',
+        'irc_notification',
+        'irc_channel',
         'landing_job',
+        'log_rotator',
         'node_label',
+        'num_to_keep_builds',
         'parallel_jobs',
         'postbuild_job',
         'publish',
         'publish_coverage',
         'publish_junit',
         'priority',
+        'rebuild',
         'team',
         'use_description_for_commit',
-        'log_rotator',
-        'days_to_keep_builds',
-        'num_to_keep_builds',
-        'irc_notification',
-        'irc_channel',
     ]
 
     DEFAULT_HOOK_LOCATION = '/tmp/$JOB_NAME-hooks'
@@ -190,6 +191,14 @@ class UpdateCi(object):
                 script = self._get_build_script(self.AGGREGATE_TESTS_TEMPLATE,
                                                 formatting)
                 ctx['aggregate_tests_script'] = script
+            elif key == 'rebuild':
+                # Only support manually specified rebuild jobs
+                if data:
+                    rebuild_list = []
+                    for rebuild_job in data.split(','):
+                        rebuild_list.append('-'.join([rebuild_job, 'rebuild']))
+                    ctx['rebuild'] = ','.join(rebuild_list)
+
             elif key in self.TEMPLATE_CONTEXT_KEYS:
                 # These are added as ctx keys only
                 ctx[key] = data
@@ -214,13 +223,14 @@ class UpdateCi(object):
         self.add_parameter(ctx, 'project_name', project_name)
         return ctx
 
-    def generate_jobs(self, job_list, project_name, job_type, job_config,
-                      job_template, build_template, job_data):
+    def generate_jobs(self, job_list, project_name, job_type, build_type,
+                      job_config, job_template, build_template, job_data):
         """ Generates the main job and builder jobs for a given project
 
         :param job_list: list to hold the generated jobs
         :param project_name: the project name from the stack definition
-        :param job_type: 'ci' or 'autolanding'
+        :param job_type: parent job - 'ci', 'autolanding' or 'rebuild'
+        :param build_type: builder job - 'ci' or 'autolanding'
         :param job_config: dictionary containing the job definition
         :param job_template: template used to define the main job
         :param build_template: template used to define the build jobs
@@ -253,12 +263,16 @@ class UpdateCi(object):
                     build_list.append(config_name)
 
                 else:
+                    build_name = '-'.join([job_base_name, config_name,
+                                           build_type])
+                    build_list.append(build_name)
+                    if job_type == 'rebuild':
+                        # For rebuild jobs, the autolanding builder jobs will
+                        # be reused. So all that is needed is the build_list.
+                        continue
                     dict_union(build_config, data)
                     ctx = self.process_project_config(project_name,
                                                       build_config, job_data)
-                    build_name = '-'.join([job_base_name, config_name,
-                                           job_type])
-                    build_list.append(build_name)
                     job_data['build_lookup'][config_name] = build_name
                     job_list.append({'name': build_name,
                                      'template': template,
@@ -300,10 +314,13 @@ class UpdateCi(object):
             ci_only_dict = project_config.pop('ci')
         if 'autolanding' in project_config:
             autolanding_only_dict = project_config.pop('autolanding')
+            rebuild_only_dict = copy.deepcopy(autolanding_only_dict)
         if 'ci_template' in project_config:
             ci_template = project_config.pop('ci_template')
         if 'autolanding_template' in project_config:
             autolanding_template = project_config.pop('autolanding_template')
+        if 'rebuild_template' in project_config:
+            rebuild_template = project_config.pop('rebuild_template')
         if 'build_template' in project_config:
             build_template = project_config.pop('build_template')
 
@@ -312,7 +329,7 @@ class UpdateCi(object):
             ci_dict = copy.deepcopy(project_config)
             if ci_only_dict is not None:
                 dict_union(ci_dict, ci_only_dict)
-            self.generate_jobs(job_list, project_name, 'ci', ci_dict,
+            self.generate_jobs(job_list, project_name, 'ci', 'ci', ci_dict,
                                ci_template, build_template, job_data)
 
         # Create autolanding job, add back in the autolanding dict
@@ -321,7 +338,18 @@ class UpdateCi(object):
             if autolanding_only_dict is not None:
                 dict_union(autolanding_dict, autolanding_only_dict)
             self.generate_jobs(job_list, project_name, 'autolanding',
+                               'autolanding',
                                autolanding_dict, autolanding_template,
+                               build_template, job_data)
+
+        # Create rebuild job, add in the rebuild dict
+        if rebuild_template:
+            rebuild_dict = copy.deepcopy(project_config)
+            if rebuild_only_dict is not None:
+                dict_union(rebuild_dict, rebuild_only_dict)
+            self.generate_jobs(job_list, project_name, 'rebuild',
+                               'autolanding',
+                               rebuild_dict, rebuild_template,
                                build_template, job_data)
 
     def process_stack(self, job_list, stack, target_project=None):

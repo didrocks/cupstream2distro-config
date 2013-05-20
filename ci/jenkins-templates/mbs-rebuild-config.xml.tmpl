@@ -23,7 +23,7 @@
         <hudson.model.StringParameterDefinition>
           <name>autolanding</name>
           <description>Specifies that this is an autolanding/merge job. Used to properly set package version string.</description>
-          <defaultValue>True</defaultValue>
+          <defaultValue></defaultValue>
         </hudson.model.StringParameterDefinition>
 {% for parameter in parameter_list %}
         <hudson.model.StringParameterDefinition>
@@ -54,7 +54,8 @@
           <configs>
             <hudson.plugins.parameterizedtrigger.CurrentBuildParameters/>
             <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
-                <properties>temp_dir=${local_archive_tmp}/${local_archive_name}/${project_name}.${BUILD_NUMBER}.autolanding</properties>
+                <properties>temp_dir=${local_archive_tmp}/${local_archive_name}/${project_name}.${BUILD_NUMBER}.rebuild
+landing_candidate=$target_branch</properties>
             </hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
           </configs>
           <projects>{{ builder_list }}</projects>
@@ -85,7 +86,8 @@
       <command>#!/bin/bash
 set -x
 
-temp_dir=${local_archive_tmp}/${local_archive_name}/${project_name}.${BUILD_NUMBER}.autolanding
+temp_dir=${local_archive_tmp}/${local_archive_name}/${project_name}.${BUILD_NUMBER}.rebuild
+
 
 for p in `ssh ${local_archive_login}@${local_archive_host} ls ${temp_dir}`; do
     ssh ${local_archive_login}@${local_archive_host} dput -ufU --config /home/ubuntu/.dput.cf ${local_archive_name} ${temp_dir}/${p}/*.changes
@@ -98,33 +100,6 @@ done</command>
       <command>{{ aggregate_tests_script }}</command>
     </hudson.tasks.Shell>
 {% endif %}
-    <hudson.plugins.parameterizedtrigger.TriggerBuilder>
-      <configs>
-        <hudson.plugins.parameterizedtrigger.BlockableBuildTriggerConfig>
-          <configs>
-            <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
-              <properties>target_branch=${target_branch}
-source_branch=${landing_candidate}
-merge_proposal=${merge_proposal}
-revision=${candidate_revision}
-packaging_branch=${packaging_branch}
-ppa_target=${ppa_target}
-distributions=${distributions}
-buildjob_url=${BUILD_URL}
-use_description_for_commit=${use_description_for_commit}
-version_string_format=${version_string_format}
-hooks=${dput_hooks}
-test_result=PASSED</properties>
-            </hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
-          </configs>
-          <projects>{{ landing_job }}</projects>
-          <condition>ALWAYS</condition>
-          <triggerWithNoParameters>false</triggerWithNoParameters>
-          <block/>
-          <buildAllNodesWithLabel>false</buildAllNodesWithLabel>
-        </hudson.plugins.parameterizedtrigger.BlockableBuildTriggerConfig>
-      </configs>
-    </hudson.plugins.parameterizedtrigger.TriggerBuilder>
 {% if rebuild %}
     <hudson.plugins.parameterizedtrigger.TriggerBuilder>
       <configs>
@@ -266,24 +241,9 @@ test_result=PASSED</properties>
         <hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
           <configs>
             <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
-              <properties>target_branch=${target_branch}
-source_branch=${landing_candidate}
-merge_proposal=${merge_proposal}
-revision=${candidate_revision}
-buildjob_url=${BUILD_URL}
-test_result=FAILED</properties>
-            </hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
-          </configs>
-          <projects>{{ landing_job }}</projects>
-          <condition>UNSTABLE_OR_WORSE</condition>
-          <triggerWithNoParameters>false</triggerWithNoParameters>
-        </hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
-        <hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
-          <configs>
-            <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
               <properties>local_archive_host=$local_archive_host
 local_archive_login=$local_archive_login
-temp_dir=${local_archive_tmp}/${local_archive_name}/${project_name}.${BUILD_NUMBER}.autolanding</properties>
+temp_dir=${local_archive_tmp}/${local_archive_name}/${project_name}.${BUILD_NUMBER}.rebuild</properties>
             </hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
           </configs>
           <projects>generic-cleanup-mbs</projects>
@@ -292,16 +252,6 @@ temp_dir=${local_archive_tmp}/${local_archive_name}/${project_name}.${BUILD_NUMB
         </hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
       </configs>
     </hudson.plugins.parameterizedtrigger.BuildTrigger>
-{% if postbuild_job %}
-    <hudson.tasks.BuildTrigger>
-        <childProjects>{{ postbuild_job }}</childProjects>
-        <threshold>
-            <name>SUCCESS</name>
-            <ordinal>0</ordinal>
-            <color>BLUE</color>
-        </threshold>
-    </hudson.tasks.BuildTrigger>
-{% endif %}
   </publishers>
   <buildWrappers/>
 </project>

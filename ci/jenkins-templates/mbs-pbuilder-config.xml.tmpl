@@ -26,8 +26,8 @@
           <defaultValue></defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
-          <name>UPSTREAM_BUILD_NUMBER</name>
-          <description>Build number of the upstream job used in the tmp directory with the deb output</description>
+          <name>temp_dir</name>
+          <description>Temporary directory to store the package artifacts</description>
           <defaultValue></defaultValue>
         </hudson.model.StringParameterDefinition>
 {% for parameter in parameter_list %}
@@ -70,22 +70,15 @@
       <command>#!/bin/bash
 set -x
 
-if [ -z &quot;${autolanding}&quot; ]; then
-    # Build was not triggered by autolanding, don't save the build artifacts
-    exit 0
-fi
-
-tmp_dir=&quot;${local_archive_tmp}/${project_name}-al-${local_archive_pocket}-${UPSTREAM_BUILD_NUMBER}&quot;
-
-# mkdir &quot;${tmp_dir}&quot; can fail due to multiple jobs attempting to create the directory
-ssh ${local_archive_login}@${local_archive_host} mkdir &quot;${tmp_dir}&quot; || true
-ssh ${local_archive_login}@${local_archive_host} mkdir &quot;${tmp_dir}/${JOB_NAME}&quot;
+# mkdir &quot;${temp_dir}&quot; can fail due to multiple jobs attempting to create the directory
+ssh ${local_archive_login}@${local_archive_host} mkdir &quot;${temp_dir}&quot; || true
+ssh ${local_archive_login}@${local_archive_host} mkdir &quot;${temp_dir}/${JOB_NAME}&quot;
 
 # Switch to the output directory containing the build results
 cd work/output
 
 # Copy the build results to the temporary holding area, if all jobs succeed, these will be dput into the ppa archive.
-scp * ${local_archive_login}@${local_archive_host}:${tmp_dir}/${JOB_NAME}</command>
+scp * ${local_archive_login}@${local_archive_host}:${temp_dir}/${JOB_NAME}</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
