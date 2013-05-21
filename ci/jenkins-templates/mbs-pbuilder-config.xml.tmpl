@@ -58,7 +58,7 @@
       <command>{{ acquire_hook_script }}</command>
     </hudson.tasks.Shell>
     <com.ubuntu.builder.PBuilderPlugin>
-      <hooks>$hooks</hooks>
+      <hooks>{{ hooks }}</hooks>
       <mainBranch>$landing_candidate</mainBranch>
       <packagingBranch>{{ packaging_branch }}</packagingBranch>
       <targetBranch>$target_branch</targetBranch>
