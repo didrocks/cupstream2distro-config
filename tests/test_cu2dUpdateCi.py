@@ -211,6 +211,40 @@ class TestProcessProjectConfig(TestCase):
                                                        job_data)
         self.assertEqual(expected, actual)
 
+    def test_project_config_parent_hooks(self):
+        config = {'hooks': 'parent-hook'}
+        expected = {'target_branch': 'lp:project',
+                    'project_name': 'project',
+                    'hooks': 'parent-hook',
+                    'parameter_list': [
+                        JobParameter('hooks',
+                                     'parent-hook'),
+                        JobParameter('target_branch',
+                                     'lp:project'),
+                        JobParameter('project_name',
+                                     'project')]}
+        actual = self.update_ci.process_project_config('project', config, {})
+        self.assertEqual(expected, actual)
+
+    def test_project_config_builder_hooks(self):
+        config = {'hooks': 'builder-hook'}
+        expected = {'target_branch': 'lp:project',
+                    'project_name': 'project',
+                    'hooks': 'builder-hook',
+                    'builder_hooks': 'builder-hook',
+                    'parameter_list': [
+                        JobParameter('hooks',
+                                     'builder-hook'),
+                        JobParameter('target_branch',
+                                     'lp:project'),
+                        JobParameter('builder_hooks',
+                                     'builder-hook'),
+                        JobParameter('project_name',
+                                     'project')]}
+        actual = self.update_ci.process_project_config('project', config, {},
+                                                       True)
+        self.assertEqual(expected, actual)
+
     def test_project_config_aggregate_tests(self):
         config = {'aggregate_tests': 'generic-job'}
         expected = {'target_branch': 'lp:project',
@@ -385,11 +419,13 @@ class TestProcessStackIntegration(TestCase):
                     'contact_email': 'address@email',
                     'distributions': 'raring,quantal,precise',
                     'ppa_target': 'ppa:autopilot/ppa',
+                    'hooks': 'parent-hook',
                     'autolanding': {
                         'postbuild_job': 'autopilot-docs-upload',
                         'archive_artifacts': '**/output/*deb',
                         'configurations': {
                             'raring-amd64': {
+                                'hooks': 'builder-hook',
                                 'priority': 10000},
                             'raring-i386': {
                                 'template': 'autopilot-config.xml.tmpl',
@@ -490,7 +526,39 @@ class TestProcessStackIntegration(TestCase):
                         child_params = [p for p in
                                         child['ctx']['parameter_list']]
                         for p in parent_params:
+                            # Skip hooks as parent and child may differ
+                            if p.name == 'hooks':
+                                continue
                             self.assertIn(p, child_params)
+
+    def test_parent_child_hooks(self):
+        """Verifies that a child builder job has a unique hook parameter when
+        hooks are specified for the builder job"""
+        config = {
+            'hooks': 'parent-hook',
+            'configurations': {
+                'raring-amd64': {'node_label': 'pbuilder',
+                                 'hooks': 'child-only-hook'},
+                'raring-i386': {'node_label': 'pbuilder'}}}
+        actual_name_list = [job['name'] for job in self.job_list]
+        self.assertIn('autopilot-autolanding', actual_name_list)
+        self.assertIn('autopilot-raring-amd64-autolanding', actual_name_list)
+        self.assertIn('autopilot-raring-i386-autolanding', actual_name_list)
+        count = 0
+        for job in self.job_list:
+            if job['name'] == 'autopilot-autolanding':
+                self.assertEqual(job['ctx']['hooks'], 'parent-hook')
+                count += 1
+            if job['name'] == 'autopilot-raring-amd64-autolanding':
+                self.assertEqual(job['ctx']['builder_hooks'], 'builder-hook')
+                self.assertEqual(job['ctx']['hooks'], 'builder-hook')
+                count += 1
+            if job['name'] == 'autopilot-raring-i386-autolanding':
+                self.assertEqual(job['ctx']['builder_hooks'], 'parent-hook')
+                self.assertEqual(job['ctx']['hooks'], 'parent-hook')
+                count += 3
+        # Make sure no assertion groups were missed
+        self.assertEqual(count, 3)
 
     def test_target_project(self):
         job_list = []
