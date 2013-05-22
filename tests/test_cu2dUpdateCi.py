@@ -242,7 +242,7 @@ class TestProcessProjectConfig(TestCase):
                         JobParameter('project_name',
                                      'project')]}
         actual = self.update_ci.process_project_config('project', config, {},
-                                                       True)
+                                                       builder_job=True)
         self.assertEqual(expected, actual)
 
     def test_project_config_aggregate_tests(self):
@@ -534,12 +534,6 @@ class TestProcessStackIntegration(TestCase):
     def test_parent_child_hooks(self):
         """Verifies that a child builder job has a unique hook parameter when
         hooks are specified for the builder job"""
-        config = {
-            'hooks': 'parent-hook',
-            'configurations': {
-                'raring-amd64': {'node_label': 'pbuilder',
-                                 'hooks': 'child-only-hook'},
-                'raring-i386': {'node_label': 'pbuilder'}}}
         actual_name_list = [job['name'] for job in self.job_list]
         self.assertIn('autopilot-autolanding', actual_name_list)
         self.assertIn('autopilot-raring-amd64-autolanding', actual_name_list)
@@ -556,7 +550,7 @@ class TestProcessStackIntegration(TestCase):
             if job['name'] == 'autopilot-raring-i386-autolanding':
                 self.assertEqual(job['ctx']['builder_hooks'], 'parent-hook')
                 self.assertEqual(job['ctx']['hooks'], 'parent-hook')
-                count += 3
+                count += 1
         # Make sure no assertion groups were missed
         self.assertEqual(count, 3)
 

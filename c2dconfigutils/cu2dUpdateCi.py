@@ -269,7 +269,7 @@ class UpdateCi(object):
                     dict_union(build_config, data)
                     ctx = self.process_project_config(project_name,
                                                       build_config, job_data,
-                                                      True)
+                                                      builder_job=True)
                     build_name = '-'.join([job_base_name, config_name,
                                            job_type])
                     build_list.append(build_name)
