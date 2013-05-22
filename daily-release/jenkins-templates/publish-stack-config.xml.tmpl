@@ -26,6 +26,7 @@
   <builders>
     <hudson.tasks.Shell>
       <command>#!/bin/bash -eu
+export WORKSPACE="$PWD"
 # Cleanup workspace
 rm -f *
 

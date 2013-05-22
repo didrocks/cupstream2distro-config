@@ -40,6 +40,8 @@
     <hudson.tasks.Shell>
       <command>#!/bin/bash -e
 export LANG=en_US.UTF-8
+export WORKSPACE="$PWD"
+
 WRKDIR={{ BASEDIR }}/work/{{ release }}/{{ stack }}
 BAKDIR=${WRKDIR}.bak
 
