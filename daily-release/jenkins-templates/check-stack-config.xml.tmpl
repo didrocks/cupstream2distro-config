@@ -86,7 +86,7 @@ for card in ati intel; do
 
     AUTOPILOTRC={{ BASEDIR }}/history/{{ release }}/{{ stack }}.autopilotrc
     [ ! -e "$AUTOPILOTRC" ] &amp;&amp; AUTOPILOTRC={{ BASEDIR }}/default.autopilotrc
-    {{ BINDIR }}/cu2d-autopilot-report -C $AUTOPILOTRC $JUNIT $card
+    {{ BINDIR }}/cu2d-autopilot-report -C $AUTOPILOTRC $JUNIT {{release}}/{{stack}}/$card
     RET=$?
 
     if [ $RET -gt 0 ]; then
