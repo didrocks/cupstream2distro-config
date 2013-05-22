@@ -16,6 +16,7 @@
     <hudson.tasks.Shell>
       <command>#!/bin/bash -e
 export LANG=en_US.UTF-8
+export WORKSPACE="$PWD"
 
 # don't rebuild the stack
 if [ "$CHECK_WITH_WHOLE_PPA" = "true" ]; then
