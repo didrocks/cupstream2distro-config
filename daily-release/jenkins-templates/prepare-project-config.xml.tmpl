@@ -22,7 +22,7 @@ OPTS="{{ opts }}"
 
 # don't rebuild the stack
 if [ "$CHECK_WITH_WHOLE_PPA" = "true" ]; then
-    touch *xml
+    cp $WRKDIR/*_{{ projectname }}.xml $WORKSPACE/
     exit 0
 fi
 
