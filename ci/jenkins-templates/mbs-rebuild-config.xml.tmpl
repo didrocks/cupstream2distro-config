@@ -54,7 +54,7 @@
           <configs>
             <hudson.plugins.parameterizedtrigger.CurrentBuildParameters/>
             <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
-                <properties>temp_dir=${local_archive_tmp}/${local_archive_name}/${project_name}.${BUILD_NUMBER}.rebuild
+                <properties>temp_dir={{ local_archive_tmp }}/${local_archive_name}/${project_name}.${BUILD_NUMBER}.rebuild
 landing_candidate=$target_branch</properties>
             </hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
           </configs>
@@ -86,13 +86,13 @@ landing_candidate=$target_branch</properties>
       <command>#!/bin/bash
 set -x
 
-temp_dir=${local_archive_tmp}/${local_archive_name}/${project_name}.${BUILD_NUMBER}.rebuild
+temp_dir={{ local_archive_tmp }}/${local_archive_name}/${project_name}.${BUILD_NUMBER}.rebuild
 
 
-for p in `ssh ${local_archive_login}@${local_archive_host} ls ${temp_dir}`; do
-    ssh ${local_archive_login}@${local_archive_host} dput -ufU --config /home/ubuntu/.dput.cf ${local_archive_name} ${temp_dir}/${p}/*.changes
+for p in `ssh {{ local_archive_login }}@{{ local_archive_host }} ls ${temp_dir}`; do
+    ssh {{ local_archive_login }}@{{ local_archive_host }} dput -ufU --config /home/ubuntu/.dput.cf ${local_archive_name} ${temp_dir}/${p}/*.changes
     # Execute mini-dinstall to update the local archive
-    ssh ${local_archive_login}@${local_archive_host} mini-dinstall --no-db --batch --config=&quot;/home/ubuntu/.mini-dinstall-${local_archive_name}.conf&quot;
+    ssh {{ local_archive_login }}@{{ local_archive_host }} mini-dinstall --no-db --batch --config=&quot;/home/ubuntu/.mini-dinstall-${local_archive_name}.conf&quot;
 done</command>
     </hudson.tasks.Shell>
 {% if aggregate_tests_script %}
@@ -241,9 +241,9 @@ done</command>
         <hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
           <configs>
             <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
-              <properties>local_archive_host=$local_archive_host
-local_archive_login=$local_archive_login
-temp_dir=${local_archive_tmp}/${local_archive_name}/${project_name}.${BUILD_NUMBER}.rebuild</properties>
+              <properties>local_archive_host={{ local_archive_host }}
+local_archive_login={{ local_archive_login }}
+temp_dir={{ local_archive_tmp }}/${local_archive_name}/${project_name}.${BUILD_NUMBER}.rebuild</properties>
             </hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
           </configs>
           <projects>generic-cleanup-mbs</projects>
