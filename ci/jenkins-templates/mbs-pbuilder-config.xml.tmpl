@@ -69,6 +69,10 @@
     <hudson.tasks.Shell>
       <command>#!/bin/bash
 set -x
+if [ -z &quot;${temp_dir}&quot; ]; then
+    # Build was not triggered by autolanding or rebuild, don't save build artifacts
+    exit 0
+fi
 
 # mkdir &quot;${temp_dir}&quot; can fail due to multiple jobs attempting to create the directory
 ssh ${local_archive_login}@${local_archive_host} mkdir &quot;${temp_dir}&quot; || true
