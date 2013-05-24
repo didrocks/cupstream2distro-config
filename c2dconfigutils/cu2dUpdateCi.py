@@ -313,8 +313,10 @@ class UpdateCi(object):
 
         ci_template = None
         autolanding_template = None
+        rebuild_template = None
         ci_only_dict = dict()
         autolanding_only_dict = dict()
+        rebuild_only_dict = dict()
 
         # Extract the ci, autolanding or build specific items to make the
         # project configuration purely generic.
