@@ -272,7 +272,7 @@ class TestProcessProjectConfig(TestCase):
         self.assertEqual(expected, actual)
 
 
-class TestGenerateJobs(TestWithScenarios, TestCase):
+class TestGenerateJobs(TestCase):
     job_template = 'ci.xml.tmpl'
     build_template = 'build.xml.tmpl'
 
@@ -288,7 +288,7 @@ class TestGenerateJobs(TestWithScenarios, TestCase):
                     'foo-raring-i386-ci',
                     'foo-ci']
         job_list = []
-        self.update_ci.generate_jobs(job_list, 'foo', 'ci', config,
+        self.update_ci.generate_jobs(job_list, 'foo', 'ci', 'ci', config,
                                      self.job_template, self.build_template,
                                      {})
         actual = [job['name'] for job in job_list]
@@ -303,7 +303,7 @@ class TestGenerateJobs(TestWithScenarios, TestCase):
                     'build.xml.tmpl',
                     'ci.xml.tmpl']
         job_list = []
-        self.update_ci.generate_jobs(job_list, 'foo', 'ci', config,
+        self.update_ci.generate_jobs(job_list, 'foo', 'ci', 'ci', config,
                                      self.job_template, self.build_template,
                                      {})
         actual = [job['template'] for job in job_list]
@@ -320,7 +320,7 @@ class TestGenerateJobs(TestWithScenarios, TestCase):
                     'bar.xml.tmpl',
                     'ci.xml.tmpl']
         job_list = []
-        self.update_ci.generate_jobs(job_list, 'foo', 'ci', config,
+        self.update_ci.generate_jobs(job_list, 'foo', 'ci', 'ci', config,
                                      self.job_template, self.build_template,
                                      {})
         actual = [job['template'] for job in job_list]
@@ -333,11 +333,38 @@ class TestGenerateJobs(TestWithScenarios, TestCase):
                 'raring-i386': {'node_label': 'pbuilder'}}}
         expected = 'foo-raring-amd64-ci,foo-raring-i386-ci'
         job_list = []
-        self.update_ci.generate_jobs(job_list, 'foo', 'ci', config,
+        self.update_ci.generate_jobs(job_list, 'foo', 'ci', 'ci', config,
                                      self.job_template, self.build_template,
                                      {})
         actual = job_list[2]['ctx']['builder_list']
         self.assertEqual(expected, actual)
+
+    def test_generate_rebuild_builder_list(self):
+        config = {
+            'configurations': {
+                'raring-amd64': {'node_label': 'pbuilder'},
+                'raring-i386': {'node_label': 'pbuilder'}}}
+        expected = 'foo-raring-amd64-autolanding,foo-raring-i386-autolanding'
+        job_list = []
+        self.update_ci.generate_jobs(job_list, 'foo', 'rebuild', 'autolanding',
+                                     config, self.job_template,
+                                     self.build_template, {})
+        actual = job_list[0]['ctx']['builder_list']
+        self.assertEqual(expected, actual)
+
+    def test_generate_rebuild_joblist(self):
+        config = {
+            'configurations': {
+                'raring-amd64': {'node_label': 'pbuilder'},
+                'raring-i386': {'node_label': 'pbuilder'}}}
+        expected = 'foo-rebuild'
+        job_list = []
+        self.update_ci.generate_jobs(job_list, 'foo', 'rebuild', 'autolanding',
+                                     config, self.job_template,
+                                     self.build_template, {})
+        actual = job_list[0]['name']
+        self.assertEqual(expected, actual)
+        self.assertEqual(1, len(job_list))
 
 
 class TestUpdateJenkins(TestCase):
@@ -415,6 +442,7 @@ class TestProcessStackIntegration(TestCase):
                 'landing_job': 'generic-land'},
             'projects': {
                 'autopilot': {
+                    'rebuild_template': 'rebuild-config.xml.tmpl',
                     'team': 'Autopilot Team',
                     'contact_email': 'address@email',
                     'distributions': 'raring,quantal,precise',
@@ -430,7 +458,8 @@ class TestProcessStackIntegration(TestCase):
                             'raring-i386': {
                                 'template': 'autopilot-config.xml.tmpl',
                                 'node_label': 'pbuilder'}}}},
-                'xpathselect': {}}}}
+                'xpathselect': {
+                    'rebuild': 'autopilot'}}}}
 
     def setUp(self):
         self.update_ci = UpdateCi()
@@ -447,6 +476,7 @@ class TestProcessStackIntegration(TestCase):
                               'autopilot-raring-armhf-autolanding',
                               'autopilot-raring-i386-autolanding',
                               'autopilot-autolanding',
+                              'autopilot-rebuild',
                               'xpathselect-raring-amd64-ci',
                               'xpathselect-raring-armhf-ci',
                               'xpathselect-ci',
@@ -464,6 +494,7 @@ class TestProcessStackIntegration(TestCase):
                                   'pbuilder-config.xml.tmpl',
                                   'autopilot-config.xml.tmpl',
                                   'autolanding-config.xml.tmpl',
+                                  'rebuild-config.xml.tmpl',
                                   'pbuilder-config.xml.tmpl',
                                   'pbuilder-config.xml.tmpl',
                                   'ci-config.xml.tmpl',
@@ -497,6 +528,8 @@ class TestProcessStackIntegration(TestCase):
             if job['name'] == 'autopilot-raring-amd64-autolanding':
                 self.assertEqual(job['ctx']['priority'], 10000)
             elif job['name'].endswith('autolanding'):
+                self.assertEqual(job['ctx']['priority'], 1000)
+            elif job['name'].endswith('rebuild'):
                 self.assertEqual(job['ctx']['priority'], 1000)
             else:
                 self.assertEqual(job['ctx']['priority'], 100)
@@ -565,7 +598,8 @@ class TestProcessStackIntegration(TestCase):
                               'autopilot-raring-amd64-autolanding',
                               'autopilot-raring-armhf-autolanding',
                               'autopilot-raring-i386-autolanding',
-                              'autopilot-autolanding']
+                              'autopilot-autolanding',
+                              'autopilot-rebuild']
         actual_name_list = [job['name'] for job in job_list]
         self.assertEqual(expected_name_list, actual_name_list)
 
