@@ -16,6 +16,8 @@
     <hudson.tasks.Shell>
       <command>#!/bin/bash -eu
 export LANG=en_US.UTF-8
+export WORKSPACE="$PWD"
+
 # Placeholder step
 WRKDIR={{ BASEDIR }}/work/{{ release }}/{{ stack }}
 cd $WRKDIR

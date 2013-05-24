@@ -16,10 +16,13 @@
     <hudson.tasks.Shell>
       <command>#!/bin/bash -e
 export LANG=en_US.UTF-8
+export WORKSPACE="$PWD"
+WRKDIR={{ BASEDIR }}/work/{{ release }}/{{ stack }}
+OPTS="{{ opts }}"
 
 # don't rebuild the stack
 if [ "$CHECK_WITH_WHOLE_PPA" = "true" ]; then
-    touch *xml
+    cp $WRKDIR/*_{{ projectname }}.xml $WORKSPACE/
     exit 0
 fi
 
@@ -29,16 +32,13 @@ if [ -n "$REBUILD_ONLY" ]; then
         [ "$prj" = "{{ projectname }}" ] &amp;&amp; DO_REBUILD=1
     done
     if [ $DO_REBUILD -eq 0 ]; then
-        touch *xml
+        cp $WRKDIR/*_{{ projectname }}.xml $WORKSPACE/
         exit 0
     fi
 fi
 
 # WS Clean-up
 rm -f *xml
-
-WRKDIR={{ BASEDIR }}/work/{{ release }}/{{ stack }}
-OPTS="{{ opts }}"
 
 cd $WRKDIR
 rm -Rf {{ projectname }}_* *_{{ projectname }}_* {{ projectname }} ubuntu/{{ projectname }} || true

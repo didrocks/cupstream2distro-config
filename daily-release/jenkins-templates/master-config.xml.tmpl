@@ -25,7 +25,7 @@
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
-  <authToken>omgmakethisubunturocks</authToken>
+  <authToken>Koh9xumayie3Eet8rooh4guniratae2b</authToken>
 {% if schedule is defined %}
   <triggers class="vector">
     <hudson.triggers.TimerTrigger>
@@ -40,6 +40,8 @@
     <hudson.tasks.Shell>
       <command>#!/bin/bash -e
 export LANG=en_US.UTF-8
+export WORKSPACE="$PWD"
+
 WRKDIR={{ BASEDIR }}/work/{{ release }}/{{ stack }}
 BAKDIR=${WRKDIR}.bak
 

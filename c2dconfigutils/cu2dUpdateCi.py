@@ -144,7 +144,7 @@ class UpdateCi(object):
         ctx['parameter_list'].append(parameter)
 
     def process_project_config(self, project_name, project_config,
-                               job_data):
+                               job_data, builder_job=False):
         """ Generates the template context from a project configuration
 
         :param project_name: the project name from the stack definition
@@ -165,6 +165,14 @@ class UpdateCi(object):
                                                     project_config['hooks']])
             else:
                 project_config['hooks'] = stack_ppa_hook
+
+        # Rename hooks parameter for builder jobs
+        if builder_job and 'hooks' in project_config:
+            # The hooks parameter used by the builder job must not have
+            # the same name as the parent job. Otherwise, the builder job
+            # will always inherit the hooks from the parent and builder
+            # specific hooks specified in the stack file will be ignored.
+            project_config['builder_hooks'] = project_config['hooks']
 
         for key in project_config:
             data = project_config[key]
@@ -280,7 +288,8 @@ class UpdateCi(object):
                         continue
                     dict_union(build_config, data)
                     ctx = self.process_project_config(project_name,
-                                                      build_config, job_data)
+                                                      build_config, job_data,
+                                                      builder_job=True)
                     job_data['build_lookup'][config_name] = build_name
                     job_list.append({'name': build_name,
                                      'template': template,

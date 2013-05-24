@@ -16,6 +16,8 @@
     <hudson.tasks.Shell>
       <command>#!/bin/bash -eu
 export LANG=en_US.UTF-8
+export WORKSPACE="$PWD"
+
 WRKDIR={{ BASEDIR }}/work/{{ release }}/{{ stack }}
 OPTS="{{ opts }}"
 
@@ -62,6 +64,7 @@ fi
     </hudson.plugins.parameterizedtrigger.TriggerBuilder>
     <hudson.tasks.Shell>
       <command>#!/bin/bash -u
+export WORKSPACE="$PWD"
 
 if [ -e /tmp/autopilot.{{ release }}.{{ stack }}.skip ]; then
     echo "Removing Skip file"
@@ -83,7 +86,7 @@ for card in ati intel; do
 
     AUTOPILOTRC={{ BASEDIR }}/history/{{ release }}/{{ stack }}.autopilotrc
     [ ! -e "$AUTOPILOTRC" ] &amp;&amp; AUTOPILOTRC={{ BASEDIR }}/default.autopilotrc
-    {{ BINDIR }}/cu2d-autopilot-report -C $AUTOPILOTRC $JUNIT $card
+    {{ BINDIR }}/cu2d-autopilot-report -C $AUTOPILOTRC $JUNIT {{release}}/{{stack}}/$card
     RET=$?
 
     if [ $RET -gt 0 ]; then
