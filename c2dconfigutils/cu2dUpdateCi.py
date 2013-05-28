@@ -144,6 +144,12 @@ class UpdateCi(object):
         ctx['parameter_list'].append(parameter)
 
     def get_rebuild_job(self, stack, project_name):
+        """ Generates the rebuild job name for a project
+
+        :param stack: the original stack dictionary
+        :param project_name: the project name to lookup
+        :return job_name: the rebuild job name for the requested project
+        """
         try:
             project = stack['projects'][project_name]
             job_name = '{}-rebuild'.format(
