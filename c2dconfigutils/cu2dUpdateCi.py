@@ -143,6 +143,16 @@ class UpdateCi(object):
         parameter = JobParameter(name, value)
         ctx['parameter_list'].append(parameter)
 
+    def get_rebuild_job(self, stack, project_name):
+        try:
+            project = stack['projects'][project_name]
+            job_name = '{}-rebuild'.format(
+                get_ci_base_job_name(project_name, project))
+        except KeyError:
+            # Allow for a user specified rebuild job
+            job_name = project_name
+        return job_name
+
     def process_project_config(self, project_name, project_config,
                                job_data, builder_job=False):
         """ Generates the template context from a project configuration
@@ -211,8 +221,10 @@ class UpdateCi(object):
                 # Only support manually specified rebuild jobs
                 if data:
                     rebuild_list = []
-                    for rebuild_job in data.split(','):
-                        rebuild_list.append('-'.join([rebuild_job, 'rebuild']))
+                    for rebuild_project in data.split(','):
+                        rebuild_job = self.get_rebuild_job(
+                            job_data['stack'], rebuild_project.strip())
+                        rebuild_list.append(rebuild_job)
                     ctx['rebuild'] = ','.join(rebuild_list)
 
             elif key in self.TEMPLATE_CONTEXT_KEYS:
@@ -314,7 +326,8 @@ class UpdateCi(object):
         stack_ppa = stack.get('ppa', False)
         if stack_ppa == "null":
             stack_ppa = False
-        job_data = {'stack_ppa': stack_ppa}
+        job_data = {'stack': stack,
+                    'stack_ppa': stack_ppa}
 
         # Merge the default config with the project specific config
         project_config = copy.deepcopy(stack['ci_default'])

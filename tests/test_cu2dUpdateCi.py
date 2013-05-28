@@ -448,6 +448,7 @@ class TestProcessStackIntegration(TestCase):
                     'distributions': 'raring,quantal,precise',
                     'ppa_target': 'ppa:autopilot/ppa',
                     'hooks': 'parent-hook',
+                    'rebuild': 'autopilot-qt , autopilot-gtk',
                     'autolanding': {
                         'postbuild_job': 'autopilot-docs-upload',
                         'archive_artifacts': '**/output/*deb',
@@ -458,8 +459,13 @@ class TestProcessStackIntegration(TestCase):
                             'raring-i386': {
                                 'template': 'autopilot-config.xml.tmpl',
                                 'node_label': 'pbuilder'}}}},
+                'autopilot-gtk': {
+                    'rebuild_template': 'rebuild-config.xml.tmpl',
+                    'target_branch': 'lp:autopilot-gtk/1.0'},
+                'autopilot-qt': {
+                    'rebuild_template': 'rebuild-config.xml.tmpl'},
                 'xpathselect': {
-                    'rebuild': 'autopilot'}}}}
+                    'rebuild': 'autopilot,another-project-rebuild'}}}}
 
     def setUp(self):
         self.update_ci = UpdateCi()
@@ -477,12 +483,26 @@ class TestProcessStackIntegration(TestCase):
                               'autopilot-raring-i386-autolanding',
                               'autopilot-autolanding',
                               'autopilot-rebuild',
+                              'autopilot-qt-raring-amd64-ci',
+                              'autopilot-qt-raring-armhf-ci',
+                              'autopilot-qt-ci',
+                              'autopilot-qt-raring-amd64-autolanding',
+                              'autopilot-qt-raring-armhf-autolanding',
+                              'autopilot-qt-autolanding',
+                              'autopilot-qt-rebuild',
                               'xpathselect-raring-amd64-ci',
                               'xpathselect-raring-armhf-ci',
                               'xpathselect-ci',
                               'xpathselect-raring-amd64-autolanding',
                               'xpathselect-raring-armhf-autolanding',
-                              'xpathselect-autolanding']
+                              'xpathselect-autolanding',
+                              'autopilot-gtk-1.0-raring-amd64-ci',
+                              'autopilot-gtk-1.0-raring-armhf-ci',
+                              'autopilot-gtk-1.0-ci',
+                              'autopilot-gtk-1.0-raring-amd64-autolanding',
+                              'autopilot-gtk-1.0-raring-armhf-autolanding',
+                              'autopilot-gtk-1.0-autolanding',
+                              'autopilot-gtk-1.0-rebuild']
         actual_name_list = [job['name'] for job in self.job_list]
         self.assertEqual(expected_name_list, actual_name_list)
 
@@ -500,7 +520,21 @@ class TestProcessStackIntegration(TestCase):
                                   'ci-config.xml.tmpl',
                                   'pbuilder-config.xml.tmpl',
                                   'pbuilder-config.xml.tmpl',
-                                  'autolanding-config.xml.tmpl']
+                                  'autolanding-config.xml.tmpl',
+                                  'rebuild-config.xml.tmpl',
+                                  'pbuilder-config.xml.tmpl',
+                                  'pbuilder-config.xml.tmpl',
+                                  'ci-config.xml.tmpl',
+                                  'pbuilder-config.xml.tmpl',
+                                  'pbuilder-config.xml.tmpl',
+                                  'autolanding-config.xml.tmpl',
+                                  'pbuilder-config.xml.tmpl',
+                                  'pbuilder-config.xml.tmpl',
+                                  'ci-config.xml.tmpl',
+                                  'pbuilder-config.xml.tmpl',
+                                  'pbuilder-config.xml.tmpl',
+                                  'autolanding-config.xml.tmpl',
+                                  'rebuild-config.xml.tmpl']
         actual_template_list = [job['template'] for job in self.job_list]
         self.assertEqual(expected_template_list, actual_template_list)
 
@@ -586,6 +620,21 @@ class TestProcessStackIntegration(TestCase):
                 count += 1
         # Make sure no assertion groups were missed
         self.assertEqual(count, 3)
+
+    def test_rebuild_list(self):
+        count = 0
+        for job in self.job_list:
+            if job['name'] == 'xpathselect-autolanding':
+                self.assertEqual(job['ctx']['rebuild'],
+                                 'autopilot-rebuild,another-project-rebuild')
+                count += 1
+            if job['name'] == 'autopilot-autolanding':
+                self.assertEqual(job['ctx']['rebuild'],
+                                 'autopilot-qt-rebuild,'
+                                 'autopilot-gtk-1.0-rebuild')
+                count += 1
+        # Make sure no assertion groups were missed
+        self.assertEqual(count, 2)
 
     def test_target_project(self):
         job_list = []
