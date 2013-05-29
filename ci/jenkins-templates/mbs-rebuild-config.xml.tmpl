@@ -238,6 +238,23 @@ done</command>
 {% endif %}
     <hudson.plugins.parameterizedtrigger.BuildTrigger>
       <configs>
+{% if ppa_target and distributions %}
+        <hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
+          <configs>
+            <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
+              <properties>ppa_target=${ppa_target}
+packaging_branch=${packaging_branch}
+trunk=${target_branch}
+distributions=${distributions}
+version_string_format=${version_string_format}.${BUILD_NUMBER}
+hook=${dput_hooks}</properties>
+            </hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
+          </configs>
+          <projects>generic-dput</projects>
+          <condition>SUCCESS</condition>
+          <triggerWithNoParameters>false</triggerWithNoParameters>
+        </hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
+{% endif %}
         <hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
           <configs>
             <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
