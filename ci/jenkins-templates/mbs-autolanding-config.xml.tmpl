@@ -54,7 +54,7 @@
           <configs>
             <hudson.plugins.parameterizedtrigger.CurrentBuildParameters/>
             <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
-                <properties>UPSTREAM_BUILD_NUMBER=$BUILD_NUMBER</properties>
+                <properties>temp_dir={{ local_archive_tmp }}/${local_archive_name}/${project_name}.${BUILD_NUMBER}.autolanding</properties>
             </hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
           </configs>
           <projects>{{ builder_list }}</projects>
@@ -85,14 +85,12 @@
       <command>#!/bin/bash
 set -x
 
-temp_dir=${local_archive_tmp}/${project_name}-al-${local_archive_pocket}-${BUILD_NUMBER}
-ppa_build_number=${BUILD_NUMBER}
+temp_dir={{ local_archive_tmp }}/${local_archive_name}/${project_name}.${BUILD_NUMBER}.autolanding
 
-
-for p in `ssh ${local_archive_login}@${local_archive_host} ls ${temp_dir}`; do
-    ssh ${local_archive_login}@${local_archive_host} dput -ufU --config /home/ubuntu/.dput.cf ${local_archive} ${temp_dir}/${p}/*.changes
+for p in `ssh {{ local_archive_login }}@{{ local_archive_host }} ls ${temp_dir}`; do
+    ssh {{ local_archive_login }}@{{ local_archive_host }} dput -ufU --config /home/ubuntu/.dput.cf ${local_archive_name} ${temp_dir}/${p}/*.changes
     # Execute mini-dinstall to update the local archive
-    ssh ${local_archive_login}@${local_archive_host} mini-dinstall --no-db --batch --config=&quot;/home/ubuntu/.mini-dinstall-${local_archive}.conf&quot;
+    ssh {{ local_archive_login }}@{{ local_archive_host }} mini-dinstall --no-db --batch --config=&quot;/home/ubuntu/.mini-dinstall-${local_archive_name}.conf&quot;
 done</command>
     </hudson.tasks.Shell>
 {% if aggregate_tests_script %}
@@ -234,6 +232,15 @@ test_result=PASSED</properties>
 {% endif %}
     <hudson.plugins.parameterizedtrigger.BuildTrigger>
       <configs>
+{% if rebuild %}
+        <hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
+          <configs>
+          </configs>
+          <projects>{{ rebuild }}</projects>
+          <condition>SUCCESS</condition>
+          <triggerWithNoParameters>true</triggerWithNoParameters>
+        </hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
+{% endif %}
         <hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
           <configs>
             <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
@@ -252,13 +259,13 @@ test_result=FAILED</properties>
         <hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
           <configs>
             <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
-              <properties>local_archive_host=$local_archive_host
-local_archive_login=$local_archive_login
-temp_dir=${local_archive_tmp}/${project}-al-${local_archive_pocket}-${BUILD_NUMBER}</properties>
+              <properties>local_archive_host={{ local_archive_host }}
+local_archive_login={{ local_archive_login }}
+temp_dir={{ local_archive_tmp }}/${local_archive_name}/${project_name}.${BUILD_NUMBER}.autolanding</properties>
             </hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
           </configs>
-          <projects>generic-cleanup-mbs-pt</projects>
-          <condition>UNSTABLE_OR_WORSE</condition>
+          <projects>generic-cleanup-mbs</projects>
+          <condition>ALWAYS</condition>
           <triggerWithNoParameters>false</triggerWithNoParameters>
         </hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
       </configs>
