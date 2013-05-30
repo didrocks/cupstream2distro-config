@@ -66,6 +66,36 @@ class TestAddParameter(TestCase):
         self.update_ci.add_parameter(ctx, 'param2', 'value2')
         self.assertEqual(expected, ctx['parameter_list'])
 
+class TestGetRebuildJob(TestWithScenarios, TestCase):
+    stack = {'projects': {'compiz': None,
+                          'nux': {'hook': 'my-hook',
+                                  'ppa_target': 'ppa',
+                                  'distributions': 'saucy'},
+                          'unity': {
+                              'target_branch': 'lp:unity/7.0'}}}
+    scenarios = [
+        ('empty_project',
+         {
+             'project_name': 'compiz',
+             'expected': 'compiz-rebuild'}),
+        ('unrelated_values',
+         {
+             'project_name': 'nux',
+             'expected': 'nux-rebuild'}),
+        ('has_target_branch',
+         {
+             'project_name': 'unity',
+             'expected': 'unity-7.0-rebuild'}),
+        ('not_a_project',
+         {
+             'project_name': 'other-project-rebuild',
+             'expected': 'other-project-rebuild'})]
+
+    def test_get_rebuild_job_name(self):
+        update_ci = UpdateCi()
+        actual = update_ci.get_rebuild_job(self.stack, self.project_name)
+        self.assertEqual(self.expected, actual)
+
 
 class TestProcessProjectConfig(TestCase):
     def setUp(self):
