@@ -150,11 +150,14 @@ class UpdateCi(object):
         :param project_name: the project name to lookup
         :return job_name: the rebuild job name for the requested project
         """
-        try:
-            project = stack['projects'][project_name]
-            job_name = '{}-rebuild'.format(
-                get_ci_base_job_name(project_name, project))
-        except KeyError:
+        if project_name in stack['projects']:
+            project_config = stack['projects'][project_name]
+            if project_config:
+                job_name = '{}-rebuild'.format(
+                    get_ci_base_job_name(project_name, project_config))
+            else:
+                job_name = '{}-rebuild'.format(project_name)
+        else:
             # Allow for a user specified rebuild job
             job_name = project_name
         return job_name
