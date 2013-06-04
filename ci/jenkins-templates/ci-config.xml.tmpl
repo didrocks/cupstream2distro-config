@@ -78,6 +78,26 @@
       <command>{{ aggregate_tests_script }}</command>
     </hudson.tasks.Shell>
 {% endif %}
+    <hudson.plugins.parameterizedtrigger.TriggerBuilder>
+      <configs>
+        <hudson.plugins.parameterizedtrigger.BlockableBuildTriggerConfig>
+          <configs>
+            <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
+              <properties>ci_result=PASSED
+ci_build=${BUILD_URL}
+ci_branch=${landing_candidate}
+ci_merge_proposal=${merge_proposal}
+ci_revision=${candidate_revision}</properties>
+            </hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
+          </configs>
+          <projects>generic-update_mp</projects>
+          <condition>ALWAYS</condition>
+          <triggerWithNoParameters>false</triggerWithNoParameters>
+          <block/>
+          <buildAllNodesWithLabel>false</buildAllNodesWithLabel>
+        </hudson.plugins.parameterizedtrigger.BlockableBuildTriggerConfig>
+      </configs>
+    </hudson.plugins.parameterizedtrigger.TriggerBuilder>
   </builders>
   <publishers>
 {% if aggregate_tests_script %}
@@ -197,20 +217,6 @@ ci_revision=${candidate_revision}</properties>
           </configs>
           <projects>generic-update_mp</projects>
           <condition>UNSTABLE_OR_WORSE</condition>
-          <triggerWithNoParameters>false</triggerWithNoParameters>
-        </hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
-        <hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
-          <configs>
-            <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
-              <properties>ci_result=PASSED
-ci_build=${BUILD_URL}
-ci_branch=${landing_candidate}
-ci_merge_proposal=${merge_proposal}
-ci_revision=${candidate_revision}</properties>
-            </hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
-          </configs>
-          <projects>generic-update_mp</projects>
-          <condition>SUCCESS</condition>
           <triggerWithNoParameters>false</triggerWithNoParameters>
         </hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
       </configs>
