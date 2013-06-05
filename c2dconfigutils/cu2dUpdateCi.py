@@ -433,7 +433,6 @@ class UpdateCi(object):
         :param orphan_release: ubuntu release that has been orphaned by project
         :param remove: delete all orphaned jobs found
 
-
         """
         if target_project is None:
             logging.error("target_project cannot be None")
