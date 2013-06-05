@@ -109,6 +109,16 @@ class UpdateCi(object):
                     $ ./cu2d-update-ci -d ./etc/indicators-head.cfg
                 To update a project in the indicator stack run:
                     $ ./cu2d-update-ci -p aproject ./etc/indicators-head.cfg
+                To delete orphaned release(s) in a project from jenkins run:
+                (Will delete matching jobs after asking)
+                    $ ./cu2d-update-ci -p aproject -o raring -c saucy
+                    $ ./cu2d-update-ci -p aproject -o i386 -c amd64
+                    $ ./cu2d-update-ci -p aproject -o armel -c armhf
+                To delete orphaned release(s) in a project from jenkins '''
+                '''without a y/n prompt run:
+                (** dangerous ** Will delete matching jobs on jenkins '''
+                '''without asking)
+                    $ ./cu2d-update-ci -p aproject -o raring -c saucy -r
                 '''),
             formatter_class=argparse.RawTextHelpFormatter)
         parser.add_argument('-C', '--credentials', metavar='CREDENTIALFILE',
@@ -422,6 +432,7 @@ class UpdateCi(object):
         :param current_release: the latest ubuntu development release name
         :param orphan_release: ubuntu release that has been orphaned by project
         :param remove: delete all orphaned jobs found
+
 
         """
         if target_project is None:
