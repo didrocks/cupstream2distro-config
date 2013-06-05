@@ -36,6 +36,7 @@ if [ -z "$(ls $WRKDIR/*.project 2&gt;/dev/null)" -a "$CHECK_WITH_WHOLE_PPA" != "
     exit 0
 else
     echo "RUN_AUTOPILOT=True" &gt; $SKIPFILE
+    echo "CHECK_WITH_WHOLE_PPA=$CHECK_WITH_WHOLE_PPA" &gt;&gt; $SKIPFILE
 fi
 
 {{ BINDIR }}/watch-ppa $OPTS
