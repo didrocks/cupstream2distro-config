@@ -3,7 +3,14 @@
   <actions/>
   <description>Run test on common architecture (i386)</description>
   <keepDependencies>false</keepDependencies>
-  <properties/>
+  <properties>
+    <hudson.plugins.throttleconcurrents.ThrottleJobProperty>
+      <maxConcurrentPerNode>0</maxConcurrentPerNode>
+      <maxConcurrentTotal>0</maxConcurrentTotal>
+      <throttleEnabled>false</throttleEnabled>
+      <throttleOption>project</throttleOption>
+    </hudson.plugins.throttleconcurrents.ThrottleJobProperty>
+  </properties>
   <scm class="hudson.scm.NullSCM"/>
   <assignedNode>master</assignedNode>
   <canRoam>false</canRoam>
@@ -16,19 +23,20 @@
     <hudson.tasks.Shell>
       <command>#!/bin/bash -eu
 export LANG=en_US.UTF-8
-export WORKSPACE="$PWD"
 
 WRKDIR={{ BASEDIR }}/work/{{ release }}/{{ stack }}
 OPTS="{{ opts }}"
 
 cd $WRKDIR
 
-echo "Removing skip file (initial cleaning)"
-rm -f /tmp/autopilot.{{ release }}.{{ stack }}.skip
+SKIPFILE=/tmp/autopilot.{{ release }}.{{ stack }}.check.run
 if [ -z "$(ls $WRKDIR/*.project 2&gt;/dev/null)" -a "$CHECK_WITH_WHOLE_PPA" != "true" ]; then
+    rm -f $SKIPFILE
     echo "No new source uploaded to PPA and CHECK_WITH_WHOLE_PPA is not set.  Skipping check!"
-    echo "&lt;testsuite errors='0' failures='0' name='' tests='1' time='0.001'&gt;&lt;testcase classname='notest.skip' name='skipped' time='0.001'/&gt;&lt;/testsuite&gt;" &gt; /tmp/autopilot.{{ release }}.{{ stack }}.skip
     exit 0
+else
+    echo "RUN_AUTOPILOT=True" &gt; $SKIPFILE
+    echo "CHECK_WITH_WHOLE_PPA=$CHECK_WITH_WHOLE_PPA" &gt;&gt; $SKIPFILE
 fi
 
 {{ BINDIR }}/watch-ppa $OPTS
@@ -42,6 +50,10 @@ fi
             <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
               <properties>{{ checkparameters }}</properties>
             </hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
+            <hudson.plugins.parameterizedtrigger.FileBuildParameters>
+                <propertiesFile>/tmp/autopilot.{{ release }}.{{ stack }}.check.run</propertiesFile>
+                <failTriggerOnMissing>true</failTriggerOnMissing>
+            </hudson.plugins.parameterizedtrigger.FileBuildParameters>
           </configs>
           <projects>{{ extracheck }}</projects>
           <condition>ALWAYS</condition>
@@ -64,17 +76,15 @@ fi
     </hudson.plugins.parameterizedtrigger.TriggerBuilder>
     <hudson.tasks.Shell>
       <command>#!/bin/bash -u
-export WORKSPACE="$PWD"
 
-if [ -e /tmp/autopilot.{{ release }}.{{ stack }}.skip ]; then
-    echo "Removing Skip file"
-    rm /tmp/autopilot.{{ release }}.{{ stack }}.skip
+if [ ! -e /tmp/autopilot.{{ release }}.{{ stack }}.check.run ]; then
+    echo &quot;Autopilot tests skipped. Nothing to report!&quot;
     exit 0
 fi
 
 JOBROOT={{ extracheck }}
 
-for card in ati intel; do
+for card in {{ apmachines }}; do
     echo &quot;Calculating results for card $card&quot;
     JUNIT=$({{ BINDIR }}/latest_autopilot_results $JOBROOT $card)
     RET=$?
