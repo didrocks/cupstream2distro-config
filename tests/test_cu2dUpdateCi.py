@@ -399,21 +399,7 @@ class TestGenerateJobs(TestCase):
 
 class TestUpdateJenkins(TestCase):
     def setUp(self):
-        self.jenkins = MagicMock()
-        self.jenkins.job_exists = lambda x: False
-        self.jenkins.create_job = MagicMock()
-        self.tmpl = MagicMock()
-        self.tmpl.render.return_value = 'template'
-        self.jjenv = MagicMock()
-        self.jjenv.get_template.return_value = self.tmpl
-        self.update_ci = UpdateCi()
-
-    def test_empty_stack(self):
-        stack = {'projects': None}
-        self.update_ci.update_jenkins(None, None, stack, None)
-
-    def test_stack(self):
-        stack = {
+        self.stack = {
             'ci_default': {
                 'ci_template': 'ci-config.xml.tmpl',
                 'autolanding_template': 'autolanding-config.xml.tmpl',
@@ -434,15 +420,206 @@ class TestUpdateJenkins(TestCase):
                                 'template': 'autopilot-config.xml.tmpl',
                                 'node_label': 'pbuilder'}}}},
                 'xpathselect': {}}}
-        calls = []
-        calls.append(call('autopilot-ci', 'template'))
-        calls.append(call('autopilot-raring-amd64-autolanding', 'template'))
-        calls.append(call('autopilot-raring-386-autolanding', 'template'))
-        calls.append(call('autopilot-autolanding', 'template'))
-        calls.append(call('xpathselect-ci', 'template'))
-        self.update_ci.update_jenkins(self.jenkins, self.jjenv, stack)
-        calls.append(call('xpathselect-autolanding', 'template'))
-        self.jenkins.create_job.asser_hass_calls(calls)
+        self.jenkins = MagicMock()
+        self.jenkins.job_exists = lambda x: False
+        self.jenkins.create_job = MagicMock()
+        self.tmpl = MagicMock()
+        self.tmpl.render.return_value = 'template'
+        self.jjenv = MagicMock()
+        self.jjenv.get_template.return_value = self.tmpl
+        self.update_ci = UpdateCi()
+
+    def test_empty_stack(self):
+        stack = {'projects': None}
+        self.update_ci.update_jenkins(None, None, stack, None)
+
+    def test_stack(self):
+        calls = [('autopilot-ci', 'template'),
+                 ('autopilot-raring-amd64-autolanding', 'template'),
+                 ('autopilot-raring-i386-autolanding', 'template'),
+                 ('autopilot-autolanding', 'template'),
+                 ('xpathselect-ci', 'template'),
+                 ('xpathselect-autolanding', 'template')]
+        self.update_ci.update_jenkins(self.jenkins, self.jjenv, self.stack)
+        made_calls = []
+        for c in self.jenkins.create_job.call_args_list:
+            args, kwargs = c
+            made_calls.append(args)
+        self.assertEqual(made_calls, calls)
+
+    def test_wait_list(self):
+        self.update_ci.deploy_jobs = MagicMock(
+            side_effect=[['autopilot-ci'], []])
+        sleep_mock = MagicMock()
+        with patch('time.sleep', sleep_mock):
+            self.update_ci.update_jenkins(self.jenkins, self.jjenv, self.stack)
+        sleep_mock.assert_called_with(60)
+
+
+class TestAreChildrenDeployed(TestCase):
+
+    def setUp(self):
+        self.job_list = [{'name': 'project-ci',
+                          'parent': None,
+                          'deployed': False},
+                         {'name': 'project-ci-builder',
+                          'parent': ['project-ci'],
+                          'deployed': False}]
+        self.update_ci = UpdateCi()
+
+    def test_children_not_deployed(self):
+        ret = self.update_ci.are_children_deployed(self.job_list,
+                                                   'project-ci')
+        self.assertFalse(ret)
+
+    def test_children_are_deployed(self):
+        self.job_list[1]['deployed'] = True
+        ret = self.update_ci.are_children_deployed(self.job_list,
+                                                   'project-ci')
+        self.assertTrue(ret)
+
+
+class TestAreParentsIdle(TestCase):
+
+    def setUp(self):
+        self.job = {'name': 'project-ci-builder',
+                    'parent': ['project-ci'],
+                    'deployed': False}
+        self.update_ci = UpdateCi()
+
+    def test_parent_is_not_idle(self):
+        is_job_idle = MagicMock(return_value=False)
+        ret = True
+        with patch('c2dconfigutils.cu2dUpdateCi.is_job_idle', is_job_idle):
+            ret = self.update_ci.are_parents_idle(None, self.job)
+        self.assertFalse(ret)
+        is_job_idle.assert_called_with(None, 'project-ci')
+
+    def test_parent_is_idle(self):
+        is_job_idle = MagicMock(return_value=True)
+        ret = False
+        with patch('c2dconfigutils.cu2dUpdateCi.is_job_idle', is_job_idle):
+            ret = self.update_ci.are_parents_idle(None, self.job)
+        self.assertTrue(ret)
+        is_job_idle.assert_called_with(None, 'project-ci')
+
+
+class TestDeployJobs(TestCase):
+
+    def setUp(self):
+        self.job_list = [{'name': 'project-ci',
+                          'parent': None,
+                          'template': 'template',
+                          'ctx': 'ctx',
+                          'deployed': False},
+                         {'name': 'project-ci-builder',
+                          'parent': 'project-ci',
+                          'template': 'template',
+                          'ctx': 'ctx',
+                          'deployed': False},
+                         {'name': 'project-autolanding',
+                          'parent': None,
+                          'template': 'template',
+                          'ctx': 'ctx',
+                          'deployed': False},
+                         {'name': 'project-rebuild',
+                          'parent': None,
+                          'template': 'template',
+                          'ctx': 'ctx',
+                          'deployed': False},
+                         {'name': 'project-autolanding-builder',
+                          'parent': ['project-autolanding',
+                                     'project-rebuild'],
+                          'template': 'template',
+                          'ctx': 'ctx',
+                          'deployed': False}]
+        self.update_ci = UpdateCi()
+        self.setup_job = MagicMock()
+        self.jenkins_handle = MagicMock()
+        self.jenkins_handle.get_queue_info = MagicMock(return_value=[])
+        self.is_job_disabled = MagicMock(return_value=True)
+        self.is_job_idle = MagicMock(return_value=True)
+
+    def test_deploy_jobs_first_iteration(self):
+        '''Verifies that only child jobs are deployed on the first iteration'''
+        expected = ['project-ci', 'project-autolanding', 'project-rebuild']
+        actual = []
+        with patch('c2dconfigutils.cu2dUpdateCi.is_job_disabled',
+                   self.is_job_disabled), \
+                patch('c2dconfigutils.cu2dUpdateCi.is_job_idle',
+                      self.is_job_idle), \
+                patch('c2dconfigutils.cu2dUpdateCi.setup_job',
+                      self.setup_job):
+            actual = self.update_ci.deploy_jobs(self.jenkins_handle, None,
+                                                self.job_list)
+        self.assertFalse(self.job_list[0]['deployed'])
+        self.assertTrue(self.job_list[1]['deployed'])
+        self.assertFalse(self.job_list[2]['deployed'])
+        self.assertFalse(self.job_list[3]['deployed'])
+        self.assertTrue(self.job_list[4]['deployed'])
+        self.assertEqual(expected, actual)
+
+    def test_deploy_jobs_final_iteration(self):
+        '''Verifies that all jobs are deployed after the child jobs are
+        deployed'''
+        expected = []
+        actual = []
+        with patch('c2dconfigutils.cu2dUpdateCi.is_job_disabled',
+                   self.is_job_disabled), \
+                patch('c2dconfigutils.cu2dUpdateCi.is_job_idle',
+                      self.is_job_idle), \
+                patch('c2dconfigutils.cu2dUpdateCi.setup_job',
+                      self.setup_job):
+            self.job_list[1]['deployed'] = True
+            self.job_list[4]['deployed'] = True
+            actual = self.update_ci.deploy_jobs(self.jenkins_handle, None,
+                                                   self.job_list)
+            for j in self.job_list:
+                self.assertTrue(j['deployed'])
+        self.assertEqual(expected, actual)
+
+    def test_deploy_jobs_wait_list_all(self):
+        '''Verifies that all jobs are wait listed if busy'''
+        is_job_idle = MagicMock(return_value=False)
+        expected = ['project-ci', 'project-ci-builder', 'project-autolanding',
+                    'project-rebuild', 'project-autolanding-builder']
+        actual = []
+        with patch('c2dconfigutils.cu2dUpdateCi.is_job_disabled',
+                   self.is_job_disabled), \
+                patch('c2dconfigutils.cu2dUpdateCi.is_job_idle',
+                      is_job_idle), \
+                patch('c2dconfigutils.cu2dUpdateCi.setup_job',
+                      self.setup_job):
+            actual = self.update_ci.deploy_jobs(self.jenkins_handle, None,
+                                                   self.job_list)
+        self.assertFalse(self.job_list[0]['deployed'])
+        self.assertFalse(self.job_list[1]['deployed'])
+        self.assertFalse(self.job_list[2]['deployed'])
+        self.assertFalse(self.job_list[3]['deployed'])
+        self.assertFalse(self.job_list[4]['deployed'])
+        self.assertEqual(expected, actual)
+
+    def test_deploy_jobs_disable_active_job(self):
+        '''Verifies that a job is disabled if it is enabled'''
+        job_list = [{'name': 'project-ci',
+                     'parent': None,
+                     'template': 'template',
+                     'ctx': 'ctx',
+                     'deployed': False}]
+        is_job_disabled = MagicMock(return_value=False)
+        expected = []
+        actual = []
+        with patch('c2dconfigutils.cu2dUpdateCi.is_job_disabled',
+                   is_job_disabled), \
+                patch('c2dconfigutils.cu2dUpdateCi.is_job_idle',
+                      self.is_job_idle), \
+                patch('c2dconfigutils.cu2dUpdateCi.setup_job',
+                      self.setup_job):
+            actual = self.update_ci.deploy_jobs(self.jenkins_handle, None,
+                                                job_list)
+        self.assertTrue(job_list[0]['deployed'])
+        self.jenkins_handle.disable_job.assert_called_with('project-ci')
+        self.assertEqual(expected, actual)
 
 
 class TestProcessStackIntegration(TestCase):
