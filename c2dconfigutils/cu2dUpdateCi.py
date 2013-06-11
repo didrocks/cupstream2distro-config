@@ -54,7 +54,7 @@ class JobParameter(object):
 class UpdateCi(object):
     DEFAULT_CREDENTIALS = os.path.expanduser('~/.cu2d.cred')
     JENKINS_CI_CONFIG_NAME = 'ci-jenkins'
-    DEPLOY_WAIT = 60
+    DEPLOY_WAIT = 10
 
     # Please keep list sorted
     TEMPLATE_CONTEXT_KEYS = [
@@ -328,20 +328,20 @@ class UpdateCi(object):
                                      'template': template,
                                      'ctx': ctx,
                                      'deployed': False,
-                                     'parent': [job_name]})
+                                     'parents': [job_name]})
 
         ctx = self.process_project_config(project_name, job_config, job_data)
 
         ctx['builder_list'] = ','.join(build_list)
         if job_type == 'rebuild':
-            for j in job_list:
-                if j['name'] in build_list:
-                    j['parent'].append(job_name)
+            for job in job_list:
+                if job['name'] in build_list:
+                    job['parents'].append(job_name)
         job_list.append({'name': job_name,
                          'template': job_template,
                          'ctx': ctx,
                          'deployed': False,
-                         'parent': None})
+                         'parents': None})
 
     def prepare_project(self, job_list, stack, project_name):
         """Prepare by project
@@ -497,15 +497,29 @@ class UpdateCi(object):
                 return True
 
     def are_children_deployed(self, job_list, parent_name):
+        """Returns true of all of a parents' children have been deployed
+
+        :param job_list: list of alls jobs set to deploy
+        :param parent_name: the name of the parent job
+
+        :return deployed: True if children are deployed, otherwise False
+        """
         for job in job_list:
-            if ((job['parent'] and parent_name in job['parent']) and
-                (job['deployed'] == False)):
+            if ((job['parents'] and parent_name in job['parents']) and
+                    (not job['deployed'])):
                 return False
         return True
 
-    def are_parents_idle(self, jenkins_handle, job):
-        for parent in job['parent']:
-            if not is_job_idle(jenkins_handle, parent):
+    def are_jobs_idle(self, jenkins_handle, job_name_list):
+        """Returns true of all jobs in the given list are idle
+
+        :param jenkins_handle: jenkins access handle
+        :param job_name_list: list of job names to check
+
+        :return deployed: True if children are deployed, otherwise False
+        """
+        for job_name in job_name_list:
+            if not is_job_idle(jenkins_handle, job_name):
                 return False
         return True
 
@@ -533,29 +547,34 @@ class UpdateCi(object):
         :return wait_list: list of jobs not yet deployed
         """
         wait_list = []
+        # Parent jobs must be processed first so that they can be disabled
+        # before the child jobs are deployed. Otherwise, a child job could
+        # be deployed just prior to an undeployed parent job being triggered.
+        # These jobs would then execute out of sync.
         for job in job_list:
-            if not job['deployed']:
+            if job['parents'] is None and not job['deployed']:
                 logging.info("Attempting to deploy: %s" % job['name'])
-                if job['parent'] is None:
-                    if not is_job_disabled(jenkins_handle, job['name']):
-                        logging.info("Disabling: %s" % job['name'])
-                        disable_job(jenkins_handle, job['name'])
-                    if self.are_children_deployed(job_list, job['name']):
-                        if is_job_idle(jenkins_handle, job['name']):
-                            setup_job(jenkins_handle, jjenv, job['name'],
-                                      job['template'], job['ctx'], update=True)
-                            job['deployed'] = True
-                        else:
-                            wait_list.append(job['name'])
-                    else:
-                        wait_list.append(job['name'])
-                else:
-                    if self.are_parents_idle(jenkins_handle, job):
+                if not is_job_disabled(jenkins_handle, job['name']):
+                    logging.info("Disabling: %s" % job['name'])
+                    disable_job(jenkins_handle, job['name'])
+                if self.are_children_deployed(job_list, job['name']):
+                    if is_job_idle(jenkins_handle, job['name']):
                         setup_job(jenkins_handle, jjenv, job['name'],
                                   job['template'], job['ctx'], update=True)
                         job['deployed'] = True
                     else:
                         wait_list.append(job['name'])
+                else:
+                    wait_list.append(job['name'])
+        for job in job_list:
+            if job['parents'] is not None and not job['deployed']:
+                logging.info("Attempting to deploy: %s" % job['name'])
+                if self.are_jobs_idle(jenkins_handle, job['parents']):
+                    setup_job(jenkins_handle, jjenv, job['name'],
+                              job['template'], job['ctx'], update=True)
+                    job['deployed'] = True
+                else:
+                    wait_list.append(job['name'])
         return wait_list
 
     def update_jenkins(self, jenkins_handle, jjenv, stack,
