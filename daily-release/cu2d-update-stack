@@ -159,6 +159,8 @@ def update_jenkins(jkh, jjenv, stack, release, update=False):
     subjobs['jobbuild'] = jobname
     ctx = dict(ctxbase)
     ctx['opts'] = '-s %s -p %s' % (stack['series'], stack['ppa'])
+    if stack['dest'] != 'ubuntu':
+        ctx['opts']  += ' -d {}'.format(stack['dest'])
     setup_job(jkh, jjenv, jobname, TEMPLATES['build'],
               ctx, update)
 
@@ -168,6 +170,8 @@ def update_jenkins(jkh, jjenv, stack, release, update=False):
         subjobs['jobbuild'] += ',' + jobname
         ctx = dict(ctxbase)
         ctx['opts'] = '-a -s %s -p %s' % (stack['series'], stack['ppa'])
+        if stack['dest'] != 'ubuntu':
+            ctx['opts']  += ' -d {}'.format(stack['dest'])
         ctx['extracheck'] = stack['extracheck']
         checkparameters = 'stack={}\nrelease={}\nseries={}\nppa={}'.format(stack['name'],
                            release, stack['series'], stack['ppa'])
