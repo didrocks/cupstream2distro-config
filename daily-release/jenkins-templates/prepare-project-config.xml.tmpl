@@ -47,7 +47,7 @@ fi
 rm -f *xml
 
 cd $WRKDIR
-rm -Rf {{ projectname }}_* *_{{ projectname }}_* {{ projectname }} ubuntu/{{ projectname }} || true
+rm -Rf {{ projectname }}.project {{ projectname }}_* *_{{ projectname }}_* {{ projectname }} ubuntu/{{ projectname }} || true
 {{ BINDIR }}/prepare-package $OPTS
 RC=$?
 
