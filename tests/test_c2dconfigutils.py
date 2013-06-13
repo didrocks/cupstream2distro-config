@@ -1,6 +1,7 @@
 from testscenarios import TestWithScenarios
 from c2dconfigutils.c2dconfigutils import (
-    dict_union, unapproved_prerequisite_exists, get_ci_base_job_name)
+    dict_union, unapproved_prerequisite_exists, get_ci_base_job_name,
+    disable_job, is_job_disabled, is_job_idle)
 from testtools import TestCase
 from testtools.matchers import Equals
 from mock import MagicMock
@@ -167,3 +168,77 @@ class TestUnapprovedPrerequisiteExists(TestCase):
                 t.queue_status = 'Merged'
         mp.prerequisite_branch = prereq
         self.assertFalse(unapproved_prerequisite_exists(mp))
+
+
+class TestDisableJob(TestCase):
+
+    def test_disable_job(self):
+        jenkins_handle = MagicMock()
+        jenkins_handle.job_exists = MagicMock(return_value=True)
+        disable_job(jenkins_handle, 'project-ci')
+        jenkins_handle.disable_job.assert_called_once_with('project-ci')
+
+    def test_disable_job_does_no_job(self):
+        jenkins_handle = MagicMock()
+        jenkins_handle.job_exists = MagicMock(return_value=False)
+        disable_job(jenkins_handle, 'project-ci')
+        self.assertEqual(jenkins_handle.disable_job.call_count, 0)
+
+
+class TestIsJobDisabled(TestCase):
+
+    def test_is_job_disabled(self):
+        '''Verifies that a job is disabled if it is not buildable'''
+        jenkins_handle = MagicMock()
+        jenkins_handle.get_job_info = MagicMock(
+            return_value={'buildable': False})
+        ret = is_job_disabled(jenkins_handle, 'project-ci')
+        self.assertTrue(ret)
+
+    def test_is_job_enabled(self):
+        '''Verifies that a job is not disabled if it is buildable'''
+        jenkins_handle = MagicMock()
+        jenkins_handle.get_job_info = MagicMock(
+            return_value={'buildable': True})
+        ret = is_job_disabled(jenkins_handle, 'project-ci')
+        self.assertFalse(ret)
+
+    def test_is_job_disabled_no_job(self):
+        '''Verifies that a job that does not exist is disabled'''
+        jenkins_handle = MagicMock()
+        jenkins_handle.job_exists = MagicMock(return_value=False)
+        jenkins_handle.get_job_info = MagicMock(
+            return_value={'buildable': True})
+        ret = is_job_disabled(jenkins_handle, 'project-ci')
+        self.assertTrue(ret)
+
+
+class TestIsJobIdle(TestCase):
+
+    def test_is_job_idle(self):
+        '''Verifies that a job is idle if lastBuild == lastCompletedBuild'''
+        jenkins_handle = MagicMock()
+        jenkins_handle.get_job_info = MagicMock(
+            return_value={'lastBuild': 99,
+                          'lastCompletedBuild': 99})
+        ret = is_job_idle(jenkins_handle, 'project-ci')
+        self.assertTrue(ret)
+
+    def test_is_job_busy(self):
+        '''Verifies that a job is idle if lastBuild == lastCompletedBuild'''
+        jenkins_handle = MagicMock()
+        jenkins_handle.get_job_info = MagicMock(
+            return_value={'lastBuild': 99,
+                          'lastCompletedBuild': 98})
+        ret = is_job_idle(jenkins_handle, 'project-ci')
+        self.assertFalse(ret)
+
+    def test_is_job_idle_no_job(self):
+        '''Verifies that a job that does not exist is idle'''
+        jenkins_handle = MagicMock()
+        jenkins_handle.job_exists = MagicMock(return_value=False)
+        jenkins_handle.get_job_info = MagicMock(
+            return_value={'lastBuild': 99,
+                          'lastCompletedBuild': 98})
+        ret = is_job_idle(jenkins_handle, 'project-ci')
+        self.assertTrue(ret)

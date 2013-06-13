@@ -147,6 +147,47 @@ def setup_job(jenkins_handle, jjenv, jobname, tmplname, ctx, update=False):
     return True
 
 
+def disable_job(jenkins_handle, jobname):
+    """ Disable the jenkins job so that new jobs are not started
+
+    This will also remove any queued jobs.
+    :param jenkins_handle: jenkins handle
+    :param jobname: jenkins job name
+    """
+    if jenkins_handle.job_exists(jobname):
+        jenkins_handle.disable_job(jobname)
+
+
+def is_job_disabled(jenkins_handle, jobname):
+    """ Returns True if the jenkins job is disabled
+    :param jenkins_handle: jenkins handle
+    :param jobname: jenkins job name
+
+    :return status: True of job is disabled, otherwise False
+    """
+    if jenkins_handle.job_exists(jobname):
+        info = jenkins_handle.get_job_info(jobname)
+        # 'buildable' indicates that a job is enabled.
+        return not info['buildable']
+    return True
+
+
+def is_job_idle(jenkins_handle, jobname):
+    """ Returns True if the jenkins job is idle
+    :param jenkins_handle: jenkins handle
+    :param jobname: jenkins job name
+
+    :return status: True of job is idle, otherwise False
+    """
+    if jenkins_handle.job_exists(jobname):
+        info = jenkins_handle.get_job_info(jobname)
+        # There is no direct test for an idle job. However, lastBuild will
+        # always indicate the highest build number allocated for a job
+        # (includes active but not queued jobs).
+        return info['lastBuild'] == info['lastCompletedBuild']
+    return True
+
+
 def set_logging(debugmode=False):
     """Initialize logging"""
     logging.basicConfig(
