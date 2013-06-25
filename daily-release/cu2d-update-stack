@@ -136,12 +136,11 @@ def update_jenkins(jkh, jjenv, stack, release, update=False):
             jobname = "-".join(basename + ['1.1prepare', srcname])
             projects.append(jobname)
 
-            ctx['opts'] = '-s %s -p %s -b %s -n %s' % (
-                stack['series'], stack['ppa'], lpb, srcname)
+            ctx['opts'] = '-s %s -p %s -b %s -n %s -V %s' % (
+                stack['series'], stack['ppa'], lpb, srcname,
+                 stack['series-version'])
             if stack['dest'] != 'ubuntu':
                 ctx['opts']  += ' -d {}'.format(stack['dest'])
-            if stack.get('maintenance-version'):
-                ctx['opts']  += ' -m {}'.format(stack['maintenance-version'])
             ctx['projectname'] = srcname
             setup_job(jkh, jjenv, jobname, TEMPLATES['prepare-project'],
                       ctx, update)
