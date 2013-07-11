@@ -49,10 +49,10 @@
   <assignedNode>{{ node_label }}</assignedNode>
   <canRoam>false</canRoam>
   <disabled>{{ disabled }}</disabled>
-  <blockBuildWhenDownstreamBuilding>true</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers class="vector"/>
-  <concurrentBuild>false</concurrentBuild>
+  <concurrentBuild>{{ concurrent_jenkins_builds }}</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
       <command>{{ acquire_hook_script }}</command>
