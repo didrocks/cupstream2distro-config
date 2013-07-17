@@ -22,6 +22,11 @@
           <description>don't rebuild the current stack, only rerun it with the whole ppa content for the check step</description>
           <defaultValue>false</defaultValue>
         </hudson.model.BooleanParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>FORCE_REBUILD</name>
+          <description>Force rebuilding above selected components (matching eventually REBUILD_ONLY), even if they have nothing to release.</description>
+          <defaultValue>false</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
