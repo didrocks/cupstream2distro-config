@@ -47,6 +47,10 @@ if [ "$FORCE_REBUILD" = "true" ]; then
     OPTS="$OPTS -f"
 fi
 
+if [ "$SKIP_DEST_CHECK" = "true" ]; then
+    OPTS="$OPTS --skip-dest-check"
+fi
+
 # WS Clean-up
 rm -f *xml
 

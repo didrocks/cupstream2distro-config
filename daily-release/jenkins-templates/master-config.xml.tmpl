@@ -23,8 +23,13 @@
           <defaultValue>false</defaultValue>
         </hudson.model.BooleanParameterDefinition>
         <hudson.model.BooleanParameterDefinition>
+          <name>SKIP_DEST_CHECK</name>
+          <description>Skip destination version check. This will then triggers FORCE_REBUILD as well and force an upload even if the latest changes in dest is not in the Vcs (note that debian/changelog will probably relist commits that are already in dest).</description>
+          <defaultValue>false</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
           <name>FORCE_REBUILD</name>
-          <description>Force rebuilding above selected components (matching eventually REBUILD_ONLY), even if they have nothing to release.</description>
+          <description>Force rebuilding above selected components (matching eventually REBUILD_ONLY), even if they have nothing to release. Note that if destination has a version that is not in the Vcs and that SKIP_DEST_CHECK is not enabled, this will still warn and block the rebuild.</description>
           <defaultValue>false</defaultValue>
         </hudson.model.BooleanParameterDefinition>
       </parameterDefinitions>
