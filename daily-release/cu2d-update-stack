@@ -141,6 +141,8 @@ def update_jenkins(jkh, jjenv, stack, release, update=False):
                  stack['series-version'])
             if stack['dest'] != 'ubuntu':
                 ctx['opts']  += ' -d {}'.format(stack['dest'])
+            if stack['projects'][srcname]['force-rebuild']:
+                ctx['opts']  += ' -f'
             ctx['projectname'] = srcname
             setup_job(jkh, jjenv, jobname, TEMPLATES['prepare-project'],
                       ctx, update)

@@ -43,6 +43,10 @@ if [ -n "$REBUILD_ONLY" ]; then
     fi
 fi
 
+if [ "$FORCE_REBUILD" = "true" ]; then
+    OPTS="$OPTS -f"
+fi
+
 # WS Clean-up
 rm -f *xml
 
