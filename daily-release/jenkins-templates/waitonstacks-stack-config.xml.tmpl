@@ -27,6 +27,11 @@ export WORKSPACE="$PWD"
 WRKDIR={{ BASEDIR }}/work/{{ release }}/{{ stack }}
 OPTS="{{ opts }}"
 
+if [ "$FORCE_PUBLICATION" = "true" ]; then
+    exit 0
+fi
+
+
 cd $WRKDIR
 {{ BINDIR }}/wait-on-stacks $OPTS
 

@@ -9,17 +9,6 @@
     <artifactNumToKeep>-1</artifactNumToKeep>
   </logRotator>
   <keepDependencies>false</keepDependencies>
-  <properties>
-    <hudson.model.ParametersDefinitionProperty>
-      <parameterDefinitions>
-        <hudson.model.BooleanParameterDefinition>
-          <name>force</name>
-          <description></description>
-          <defaultValue>false</defaultValue>
-        </hudson.model.BooleanParameterDefinition>
-      </parameterDefinitions>
-    </hudson.model.ParametersDefinitionProperty>
-  </properties>
   <scm class="hudson.scm.NullSCM"/>
   <assignedNode>master</assignedNode>
   <canRoam>false</canRoam>
@@ -41,7 +30,7 @@ WRKDIR={{ BASEDIR }}/work/{{ release }}/{{ stack }}
 OUTDIR={{ BASEDIR }}/out/
 
 OPTS="{{ opts }}"
-[ "$force" = "true" ] &amp;&amp; OPTS="$OPTS -f"
+[ "$FORCE_PUBLICATION" = "true" ] &amp;&amp; OPTS="$OPTS -f"
 
 cd $WRKDIR
 {{ BINDIR }}/publisher $OPTS

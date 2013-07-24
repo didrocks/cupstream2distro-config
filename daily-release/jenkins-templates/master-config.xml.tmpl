@@ -12,6 +12,11 @@
   <properties>
     <hudson.model.ParametersDefinitionProperty>
       <parameterDefinitions>
+        <hudson.model.BooleanParameterDefinition>
+          <name>FORCE_PUBLICATION</name>
+          <description>Force publication of all pending components for this stack</description>
+          <defaultValue>false</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>REBUILD_ONLY</name>
           <description>space separated list of project to rebuild</description>
@@ -61,7 +66,7 @@ export WORKSPACE="$PWD"
 WRKDIR={{ BASEDIR }}/work/{{ release }}/{{ stack }}
 BAKDIR=${WRKDIR}.bak
 
-if [ -z &quot;$REBUILD_ONLY&quot; -a "$CHECK_WITH_WHOLE_PPA" != "true" ]; then
+if [ -z &quot;$REBUILD_ONLY&quot; -a "$CHECK_WITH_WHOLE_PPA" != "true" -a "$FORCE_PUBLICATION" != "true" ]; then
     [ -d &quot;$BAKDIR&quot; ] &amp;&amp; rm -Rf $BAKDIR
     [ -d &quot;$WRKDIR&quot; ] &amp;&amp; mv $WRKDIR $BAKDIR
 fi
