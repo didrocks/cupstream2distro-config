@@ -30,6 +30,7 @@ WRKDIR={{ BASEDIR }}/work/{{ release }}/{{ stack }}
 OUTDIR={{ BASEDIR }}/out/
 
 OPTS="{{ opts }}"
+FORCE_PUBLICATION=${FORCE_PUBLICATION-false}
 [ "$FORCE_PUBLICATION" = "true" ] &amp;&amp; OPTS="$OPTS -f"
 
 cd $WRKDIR
