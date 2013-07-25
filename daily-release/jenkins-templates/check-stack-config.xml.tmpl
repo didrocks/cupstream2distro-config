@@ -33,13 +33,14 @@ export LANG=en_US.UTF-8
 WRKDIR={{ BASEDIR }}/work/{{ release }}/{{ stack }}
 OPTS="{{ opts }}"
 
-if [ "$FORCE_PUBLICATION" = "true" ]; then
-    exit 0
-fi
-
 cd $WRKDIR
 
 SKIPFILE=/tmp/autopilot.{{ release }}.{{ stack }}.check.run
+if [ "$FORCE_PUBLICATION" = "true" ]; then
+    rm -f $SKIPFILE
+    exit 0
+fi
+
 if [ -z "$(ls $WRKDIR/*.project 2&gt;/dev/null)" -a "$CHECK_WITH_WHOLE_PPA" != "true" ]; then
     rm -f $SKIPFILE
     echo "No new source uploaded to PPA and CHECK_WITH_WHOLE_PPA is not set.  Skipping check!"
