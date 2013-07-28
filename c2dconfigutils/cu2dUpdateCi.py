@@ -85,6 +85,7 @@ class UpdateCi(object):
         'rebuild',
         'team',
         'use_description_for_commit',
+        'use_stack_ppa',
     ]
 
     DEFAULT_HOOK_LOCATION = '/tmp/$JOB_NAME-hooks'
@@ -191,11 +192,12 @@ class UpdateCi(object):
         if job_data.get('stack_ppa', False):
             stack_ppa_hook = self.GENERATED_HOOK_TEMPLATE.format(
                 job_data['stack_ppa'].replace('/', '~'))
-            if project_config.get('hooks', False):
-                project_config['hooks'] = ' '.join([stack_ppa_hook,
-                                                    project_config['hooks']])
-            else:
-                project_config['hooks'] = stack_ppa_hook
+            if project_config.get('use_stack_ppa', False):
+                if project_config.get('hooks', False):
+                    project_config['hooks'] = ' '.join(
+                        [stack_ppa_hook, project_config['hooks']])
+                else:
+                    project_config['hooks'] = stack_ppa_hook
 
         # Rename hooks parameter for builder jobs
         if builder_job and 'hooks' in project_config:
