@@ -191,11 +191,13 @@ class TestProcessProjectConfig(TestCase):
             self.assertEqual(expected, actual)
 
     def test_project_config_stack_ppa(self):
-        config = {'hooks': 'my_hook'}
+        config = {'hooks': 'my_hook',
+                  'use_stack_ppa': True}
         job_data = {'stack_ppa': 'ppa_team/ppa_name'}
         expected = {'target_branch': 'lp:project',
                     'project_name': 'project',
                     'hooks': 'D09add_ppa~ppa_team~ppa_name my_hook',
+                    'use_stack_ppa': True,
                     'parameter_list': [
                         JobParameter('hooks',
                                      'D09add_ppa~ppa_team~ppa_name my_hook'),
@@ -207,12 +209,31 @@ class TestProcessProjectConfig(TestCase):
                                                        job_data)
         self.assertEqual(expected, actual)
 
+    def test_project_config_stack_no_use_stack_ppa(self):
+        config = {'hooks': 'my_hook'}
+        job_data = {'stack_ppa': 'ppa_team/ppa_name'}
+        expected = {'target_branch': 'lp:project',
+                    'project_name': 'project',
+                    'hooks': 'my_hook',
+                    'parameter_list': [
+                        JobParameter('hooks',
+                                     'my_hook'),
+                        JobParameter('target_branch',
+                                     'lp:project'),
+                        JobParameter('project_name',
+                                     'project')]}
+        actual = self.update_ci.process_project_config('project', config,
+                                                       job_data)
+        self.assertEqual(expected, actual)
+
     def test_project_config_stack_ppa_with_no_hooks(self):
-        config = {'hooks': ''}
+        config = {'hooks': '',
+                  'use_stack_ppa': True}
         job_data = {'stack_ppa': 'ppa_team/ppa_name'}
         expected = {'target_branch': 'lp:project',
                     'project_name': 'project',
                     'hooks': 'D09add_ppa~ppa_team~ppa_name',
+                    'use_stack_ppa': True,
                     'parameter_list': [
                         JobParameter('hooks',
                                      'D09add_ppa~ppa_team~ppa_name'),
@@ -225,11 +246,13 @@ class TestProcessProjectConfig(TestCase):
         self.assertEqual(expected, actual)
 
     def test_project_config_stack_ppa_with_false_hooks(self):
-        config = {'hooks': False}
+        config = {'hooks': False,
+                  'use_stack_ppa': True}
         job_data = {'stack_ppa': 'ppa_team/ppa_name'}
         expected = {'target_branch': 'lp:project',
                     'project_name': 'project',
                     'hooks': 'D09add_ppa~ppa_team~ppa_name',
+                    'use_stack_ppa': True,
                     'parameter_list': [
                         JobParameter('hooks',
                                      'D09add_ppa~ppa_team~ppa_name'),
