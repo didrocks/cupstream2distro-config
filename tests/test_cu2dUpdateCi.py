@@ -209,6 +209,25 @@ class TestProcessProjectConfig(TestCase):
                                                        job_data)
         self.assertEqual(expected, actual)
 
+    def test_project_config_stack_false_use_stack_ppa(self):
+        config = {'hooks': 'my_hook',
+                  'use_stack_ppa': False}
+        job_data = {'stack_ppa': 'ppa_team/ppa_name'}
+        expected = {'target_branch': 'lp:project',
+                    'project_name': 'project',
+                    'hooks': 'my_hook',
+                    'use_stack_ppa': False,
+                    'parameter_list': [
+                        JobParameter('hooks',
+                                     'my_hook'),
+                        JobParameter('target_branch',
+                                     'lp:project'),
+                        JobParameter('project_name',
+                                     'project')]}
+        actual = self.update_ci.process_project_config('project', config,
+                                                       job_data)
+        self.assertEqual(expected, actual)
+
     def test_project_config_stack_no_use_stack_ppa(self):
         config = {'hooks': 'my_hook'}
         job_data = {'stack_ppa': 'ppa_team/ppa_name'}
