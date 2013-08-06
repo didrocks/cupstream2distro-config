@@ -36,7 +36,7 @@ OPTS="{{ opts }}"
 cd $WRKDIR
 
 SKIPFILE=/tmp/autopilot.{{ release }}.{{ stack }}.check.run
-if [ "$FORCE_PUBLICATION" = "true" ]; then
+if [ "$FORCE_PUBLICATION" = "true" ]  || [ "$AUTO_PUBLICATION" = "true" ]; then
     rm -f $SKIPFILE
     exit 0
 fi

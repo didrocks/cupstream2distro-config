@@ -37,6 +37,11 @@
           <description>Force rebuilding above selected components (matching eventually REBUILD_ONLY), even if they have nothing to release. Note that if destination has a version that is not in the Vcs and that SKIP_DEST_CHECK is not enabled, this will still warn and block the rebuild.</description>
           <defaultValue>false</defaultValue>
         </hudson.model.BooleanParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>AUTO_PUBLICATION</name>
+          <description>This command is an internal property to retry publication once a stack a dependant stack is manually published. Do not use manually</description>
+          <defaultValue>false</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
@@ -56,25 +61,35 @@
 {% else %}  
   <triggers class="vector"/>
 {% endif %}
-  <concurrentBuild>false</concurrentBuild>
+  <concurrentBuild>true</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
       <command>#!/bin/bash -e
 export LANG=en_US.UTF-8
 export WORKSPACE="$PWD"
-
 WRKDIR={{ BASEDIR }}/work/{{ release }}/{{ stack }}
 BAKDIR=${WRKDIR}.bak
-
-if [ -z &quot;$REBUILD_ONLY&quot; -a "$CHECK_WITH_WHOLE_PPA" != "true" -a "$FORCE_PUBLICATION" != "true" ]; then
-    [ -d &quot;$BAKDIR&quot; ] &amp;&amp; rm -Rf $BAKDIR
-    [ -d &quot;$WRKDIR&quot; ] &amp;&amp; mv $WRKDIR $BAKDIR
-fi
-
-# Fix umask when run as jenkins
-umask 0002
-mkdir -p $WRKDIR
 cd $WRKDIR
+
+# detect if we do a new build (or a new check treated as a build)
+if [ "$FORCE_PUBLICATION" != "true" -a "$AUTO_PUBLICATION" != "true" ]; then
+  touch stack.started
+
+else
+  # check the stack is not running
+  if [ -f "stack.building" ] || [ ! -f "stack.status" ]; then
+    echo "current stack is currently building, can't even force the publication."
+    # TODO: better would be a xml file + warning
+    exit 1
+
+  # enable to only trying automatically republish if the previous run didn't fail
+  elif [ "$AUTO_PUBLICATION" = "true" ]; then
+    if [ `cat stack.status` -eq 1 ]; then
+      echo "the previous run already failed, can't republish automatically the stack. Report to that run to get more info."
+      exit 1
+    fi
+  fi
+fi
 
 </command>
     </hudson.tasks.Shell>
@@ -213,7 +228,22 @@ cd $WRKDIR
           </logTexts>
           <EscalateStatus>false</EscalateStatus>
           <RunIfJobSuccessful>false</RunIfJobSuccessful>
-          <script>{{ BINDIR }}/stack_status -s {{ stack }} -r {{ release }}</script>
+          <hudson.tasks.Shell>
+            <command>#!/bin/bash -e
+export LANG=en_US.UTF-8
+export WORKSPACE="$PWD"
+WRKDIR={{ BASEDIR }}/work/{{ release }}/{{ stack }}
+cd $WRKDIR
+
+{{ BINDIR }}/stack_status -s {{ stack }} -r {{ release }}
+rm -f stack.started
+rm -f stack.building
+
+if [ `cat stack.status` -eq 0 ]; then
+  {{ BINDIR }}/run_rdepends_publishable_stack
+fi
+</command>
+          </hudson.tasks.Shell>
         </hudson.plugins.postbuildtask.TaskProperties>
       </tasks>
     </hudson.plugins.postbuildtask.PostbuildTask>

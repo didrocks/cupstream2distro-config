@@ -27,7 +27,7 @@ WRKDIR={{ BASEDIR }}/work/{{ release }}/{{ stack }}
 OPTS="{{ opts }}"
 
 # don't rebuild the stack
-if [ "$CHECK_WITH_WHOLE_PPA" = "true" ] || [ "$FORCE_PUBLICATION" = "true" ]; then
+if [ "$CHECK_WITH_WHOLE_PPA" = "true" ] || [ "$FORCE_PUBLICATION" = "true" ] || [ "$AUTO_PUBLICATION" = "true" ]; then
     cp $WRKDIR/*_{{ projectname }}.xml $WORKSPACE/
     exit 0
 fi
