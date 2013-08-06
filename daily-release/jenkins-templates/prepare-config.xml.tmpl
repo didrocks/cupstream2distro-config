@@ -26,6 +26,20 @@ export WORKSPACE="$PWD"
 
 # Placeholder step
 WRKDIR={{ BASEDIR }}/work/{{ release }}/{{ stack }}
+BAKDIR=${WRKDIR}.bak
+
+# detect if we do a new build (or a new check treated as a build)
+if [ "$FORCE_PUBLICATION" != "true" -a "$AUTO_PUBLICATION" != "true"]; then
+  # swipe to a new ws if no partial rebuild or just check
+  if [ -z &quot;$REBUILD_ONLY&quot; -a "$CHECK_WITH_WHOLE_PPA" != "true" ]; then
+    [ -d &quot;$BAKDIR&quot; ] &amp;&amp; rm -Rf $BAKDIR
+    [ -d &quot;$WRKDIR&quot; ] &amp;&amp; mv $WRKDIR $BAKDIR
+    # Fix umask when run as jenkins
+    umask 0002
+    mkdir -p $WRKDIR
+  fi
+  touch $WRKDIR/stack.building
+fi
 cd $WRKDIR
 
 </command>
