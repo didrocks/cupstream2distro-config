@@ -46,6 +46,8 @@ if [ "$FORCE_PUBLICATION" != "true" -a "$AUTO_PUBLICATION" != "true" ]; then
   # retouch stack.started in case we created the new directory
   touch $WRKDIR/stack.started
   touch $WRKDIR/stack.building
+  # remove the old started file (prepare if we want to restore the backup dir)
+  rm -f $BAKDIR/stack.started
 fi
 cd $WRKDIR
 
