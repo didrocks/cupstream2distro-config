@@ -20,11 +20,16 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>#!/bin/bash -e
+      <command>#!/bin/bash -eu
 export LANG=en_US.UTF-8
 export WORKSPACE="$PWD"
 WRKDIR={{ BASEDIR }}/work/{{ release }}/{{ stack }}
 OPTS="{{ opts }}"
+
+# jenkins doesn't pass empty variable to subjobs, set it if nothing present
+set +u
+REBUILD_ONLY=${REBUILD_ONLY-}
+set -u
 
 # don't rebuild the stack
 if [ "$CHECK_WITH_WHOLE_PPA" = "true" ] || [ "$FORCE_PUBLICATION" = "true" ] || [ "$AUTO_PUBLICATION" = "true" ]; then

@@ -64,7 +64,7 @@
   <concurrentBuild>true</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>#!/bin/bash -e
+      <command>#!/bin/bash -eu
 export LANG=en_US.UTF-8
 export WORKSPACE="$PWD"
 WRKDIR={{ BASEDIR }}/work/{{ release }}/{{ stack }}
@@ -233,8 +233,8 @@ fi
           </logTexts>
           <EscalateStatus>false</EscalateStatus>
           <RunIfJobSuccessful>false</RunIfJobSuccessful>
-          <hudson.tasks.Shell>
-            <command>#!/bin/bash -e
+          <script>
+#!/bin/bash -eu
 export LANG=en_US.UTF-8
 export WORKSPACE="$PWD"
 WRKDIR={{ BASEDIR }}/work/{{ release }}/{{ stack }}
@@ -247,8 +247,7 @@ rm -f stack.building
 if [ `cat stack.status` -eq 0 ]; then
   {{ BINDIR }}/run_rdepends_publishable_stack
 fi
-</command>
-          </hudson.tasks.Shell>
+          </script>
         </hudson.plugins.postbuildtask.TaskProperties>
       </tasks>
     </hudson.plugins.postbuildtask.PostbuildTask>

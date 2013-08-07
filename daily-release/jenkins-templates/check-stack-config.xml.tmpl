@@ -86,7 +86,7 @@ fi
       </configs>
     </hudson.plugins.parameterizedtrigger.TriggerBuilder>
     <hudson.tasks.Shell>
-      <command>#!/bin/bash -u
+      <command>#!/bin/bash -eu
 
 if [ ! -e /tmp/autopilot.{{ release }}.{{ stack }}.check.run ]; then
     echo &quot;Autopilot tests skipped. Nothing to report!&quot;
