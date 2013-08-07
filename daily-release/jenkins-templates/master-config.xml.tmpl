@@ -244,8 +244,13 @@ cd $WRKDIR
 rm -f stack.started
 rm -f stack.building
 
-if [ `cat stack.status` -eq 0 ]; then
-  {{ BINDIR }}/run_rdepends_publishable_stack
+# only publish automatically if no rebuild was involved (we are sure that way, no ABI breakage or manual checking at least)
+# FIXME: what about: I rebuild with A, then manual publication (package change) and I force publication?
+# we should track that a rebuild happened sooner than depending stacks and only launch that were rebuilt after that one
+if [ "$CHECK_WITH_WHOLE_PPA" = "true" ] || [ "$FORCE_PUBLICATION" = "true" ] || [ "$AUTO_PUBLICATION" = "true" ]; then
+  if [ `cat stack.status` -eq 0 ]; then
+    {{ BINDIR }}/run_rdepends_publishable_stack
+  fi
 fi
           </script>
         </hudson.plugins.postbuildtask.TaskProperties>
