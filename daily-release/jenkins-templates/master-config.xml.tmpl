@@ -68,14 +68,13 @@
 export LANG=en_US.UTF-8
 export WORKSPACE="$PWD"
 WRKDIR={{ BASEDIR }}/work/{{ release }}/{{ stack }}
-BAKDIR=${WRKDIR}.bak
 cd $WRKDIR
 
 # detect if we do a new build (or a new check treated as a build)
 if [ "$FORCE_PUBLICATION" != "true" -a "$AUTO_PUBLICATION" != "true" ]; then
   if [ -f "stack.started" ]; then
     # TODO: better would be a xml file + warning
-    echo "only one instance of a stack can be queued for building
+    echo "only one instance of a stack can be queued for building"
     exit 1
   fi
   touch stack.started
