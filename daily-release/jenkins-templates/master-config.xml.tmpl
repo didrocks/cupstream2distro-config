@@ -95,6 +95,9 @@ else
   fi
 fi
 
+# enable postrun as we didn't exit directly in head
+echo NEEDPOSTRUN
+
 </command>
     </hudson.tasks.Shell>
 {% if dependencies is defined %}
@@ -226,7 +229,7 @@ fi
         <hudson.plugins.postbuildtask.TaskProperties>
           <logTexts>
             <hudson.plugins.postbuildtask.LogProperties>
-              <logText>.*</logText>
+              <logText>.*NEEDPOSTRUN.*</logText>
               <operator>AND</operator>
             </hudson.plugins.postbuildtask.LogProperties>
           </logTexts>
@@ -240,8 +243,12 @@ WRKDIR={{ BASEDIR }}/work/{{ release }}/{{ stack }}
 cd $WRKDIR
 
 {{ BINDIR }}/stack_status -s {{ stack }} -r {{ release }}
-rm -f stack.started
-rm -f stack.building
+
+# remove lock files if we are in a build case (as it's when we built them)
+if [ "$FORCE_PUBLICATION" != "true" -a "$AUTO_PUBLICATION" != "true" ]; then
+  rm -f stack.started
+  rm -f stack.building
+fi
 
 # only publish automatically if no rebuild was involved (we are sure that way, no ABI breakage or manual checking at least)
 # FIXME: what about: I rebuild with A, then manual publication (package change) and I force publication?
