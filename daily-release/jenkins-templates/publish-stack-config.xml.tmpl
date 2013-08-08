@@ -10,7 +10,7 @@
   </logRotator>
   <keepDependencies>false</keepDependencies>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>master</assignedNode>
+  <assignedNode>daily-release</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -23,7 +23,7 @@
       <command>#!/bin/bash -eu
 export WORKSPACE="$PWD"
 # Cleanup workspace
-rm -f *
+pwd|grep -q workspace &amp;&amp; rm -f *
 
 export LANG=en_US.UTF-8
 WRKDIR={{ BASEDIR }}/work/{{ release }}/{{ stack }}
