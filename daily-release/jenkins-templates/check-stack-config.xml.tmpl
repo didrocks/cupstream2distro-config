@@ -95,9 +95,9 @@ fi
 
 JOBROOT={{ extracheck }}
 
-for card in {{ apmachines }}; do
-    echo &quot;Calculating results for card $card&quot;
-    JUNIT=$({{ BINDIR }}/latest_autopilot_results $JOBROOT $card)
+for machine in {{ apmachines }}; do
+    echo &quot;Calculating results for machine $machine&quot;
+    JUNIT=$({{ BINDIR }}/latest_autopilot_results $JOBROOT $machine)
     RET=$?
 
     if [ $RET -gt 0 ]; then
@@ -107,11 +107,11 @@ for card in {{ apmachines }}; do
 
     AUTOPILOTRC={{ BASEDIR }}/history/{{ release }}/{{ stack }}.autopilotrc
     [ ! -e "$AUTOPILOTRC" ] &amp;&amp; AUTOPILOTRC={{ BASEDIR }}/default.autopilotrc
-    {{ BINDIR }}/cu2d-autopilot-report -C $AUTOPILOTRC $JUNIT {{release}}/{{stack}}/$card
+    {{ BINDIR }}/cu2d-autopilot-report -C $AUTOPILOTRC $JUNIT {{release}}/{{stack}}/$machine
     RET=$?
 
     if [ $RET -gt 0 ]; then
-        echo &quot;Tests for card &apos;$card&apos; failed!&quot;
+        echo &quot;Tests for machine &apos;$machine&apos; failed!&quot;
         exit $RET
     fi
 done</command>
