@@ -50,8 +50,8 @@ if [ "$FORCE_REBUILD" = "true" ]; then
     OPTS="$OPTS -f"
 fi
 
-if [ "$SKIP_DEST_CHECK" = "true" ]; then
-    OPTS="$OPTS --skip-dest-check"
+if [ "$SKIP_PREPARE_CHECKS" = "true" ]; then
+    OPTS="$OPTS --skip-checks"
 fi
 
 # WS Clean-up

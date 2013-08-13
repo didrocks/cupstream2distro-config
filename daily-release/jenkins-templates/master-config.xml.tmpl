@@ -28,8 +28,8 @@
           <defaultValue>false</defaultValue>
         </hudson.model.BooleanParameterDefinition>
         <hudson.model.BooleanParameterDefinition>
-          <name>SKIP_DEST_CHECK</name>
-          <description>Skip destination version check. This will then triggers FORCE_REBUILD as well and force an upload even if the latest changes in dest is not in the Vcs (note that debian/changelog will probably relist commits that are already in dest).</description>
+          <name>SKIP_PREPARE_CHECKS</name>
+          <description>Skip prepare checks. This will then triggers FORCE_REBUILD as well and force an upload even if the latest changes even if dest is not in the Vcs (note that debian/changelog will probably relist commits that are already in dest) and even if the precondition FORCE_REBUILD trigger isn't met.</description>
           <defaultValue>false</defaultValue>
         </hudson.model.BooleanParameterDefinition>
         <hudson.model.BooleanParameterDefinition>
