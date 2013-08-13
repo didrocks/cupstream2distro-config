@@ -70,6 +70,8 @@ export WORKSPACE="$PWD"
 WRKDIR={{ BASEDIR }}/work/{{ release }}/{{ stack }}
 cd $WRKDIR
 
+REBUILD_ONLY=${REBUILD_ONLY-}
+
 # detect if we do a new build (or a new check treated as a build)
 if [ "$FORCE_PUBLICATION" != "true" -a "$AUTO_PUBLICATION" != "true" ]; then
   if [ -f "stack.started" ]; then
