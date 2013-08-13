@@ -87,9 +87,11 @@ else
     exit 1
 
   # enable to only trying automatically republish if the previous run didn't fail
-  elif [ "$AUTO_PUBLICATION" = "true" ]; then
+  # but not if a manual "normal" publication is tried: AUTO_PUBLICATION and foo
+  elif [ "$AUTO_PUBLICATION" = "true" -a "$REBUILD_ONLY" != "foo" ]; then
     if [ `cat stack.status` -eq 1 ]; then
-      echo "the previous run already failed, can't republish automatically the stack. Report to that run to get more info."
+      echo "ERROR: The previous run already failed, can't republish automatically the stack. Report to that run to get more info."
+      echo "If you wanted to try/force a manual regular publication, you can use AUTO_PUBLICATION and set REBUILD_ONLY to foo to bypass this safeguard."
       exit 1
     fi
   fi
