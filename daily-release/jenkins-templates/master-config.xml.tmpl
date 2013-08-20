@@ -68,6 +68,10 @@
 export LANG=en_US.UTF-8
 export WORKSPACE="$PWD"
 WRKDIR={{ BASEDIR }}/work/{{ release }}/{{ stack }}
+
+# to bootstrap a stack
+umask 0002
+mkdir -p $WRKDIR
 cd $WRKDIR
 
 REBUILD_ONLY=${REBUILD_ONLY-}
