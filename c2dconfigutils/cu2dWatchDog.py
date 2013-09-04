@@ -91,9 +91,11 @@ class CheckStalledMPs(object):
                     target_branch = 'lp:' + project
                     if parameters and 'target_branch' in parameters:
                         target_branch = parameters['target_branch']
-                    stalled = stalled + self.check_branch(launchpad,
-                                                          target_branch,
-                                                          threshold)
+                    branch_stalled = self.check_branch(launchpad,
+                                                       target_branch,
+                                                       threshold)
+                    if branch_stalled:
+                        stalled = stalled + branch_stalled
         for message in stalled:
             logging.error(message)
         if stalled:
