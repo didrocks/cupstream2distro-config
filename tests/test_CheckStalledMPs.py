@@ -154,6 +154,15 @@ class TestCheckStalledMps(TestCase):
             ret = self.command.process_stacks([1], 120, '')
             self.assertThat(ret, Equals(1))
 
+    def test_process_stacks_no_lp_branch(self):
+        '''Verify that if a branch is not found in lp, it is not stalled.'''
+        load_stack_cfg = lambda x, y: self.stack_cfg
+        self.command.check_branch = lambda x, y, z: None
+        with patch('c2dconfigutils.cu2dWatchDog.load_stack_cfg',
+                   load_stack_cfg):
+            ret = self.command.process_stacks([1], 120, '')
+            self.assertThat(ret, Equals(0))
+
     def test_process_stacks_stackcfg_fails_to_load(self):
         load_stack_cfg = lambda x, y: None
         with patch('c2dconfigutils.cu2dWatchDog.load_stack_cfg',
