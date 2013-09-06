@@ -9,7 +9,7 @@ for build_job in {DOWNSTREAM_BUILD_JOB}; do
     rm -rf ./${{build_job}} || true
     wget -O ${{build_job}}_number.txt &quot;http://localhost:8080/job/${{build_job}}/api/xml?depth=1&amp;xpath=/freeStyleProject/build[action/cause/upstreamProject=\&quot;$JOB_NAME\&quot; and action/cause/upstreamBuild=$BUILD_NUMBER]/number&quot;
 
-    sed -i &quot;s/&lt;number&gt;\(.*\)&lt;\/number&gt;/\1/&quot; downstream_number.txt
+    sed -i &quot;s/&lt;number&gt;\(.*\)&lt;\/number&gt;/\1/&quot; ${{build_job}}_number.txt
 
     downstream_number=`cat ${{build_job}}_number.txt`
     results_url=http://localhost:8080/job/${{build_job}}/$downstream_number/artifact/*zip*/archive.zip
