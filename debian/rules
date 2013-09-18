@@ -4,7 +4,7 @@
 
 override_dh_auto_test:
 	pyruntest -f xml -fo test_results.xml -c -cf xml -co coverage.xml -ce '/usr*,tests*' tests
-	ci/cu2d-validate -d -D stacks
+	ci/cu2d-validate -d -D stacks -E experimental
 
 override_dh_install:
 	dh_install --fail-missing

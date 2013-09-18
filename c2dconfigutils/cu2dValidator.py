@@ -49,17 +49,26 @@ class StacksValidator(object):
                             help='Path to directory with stacks definition. ' +
                             '(default: {}).'.format(
                                 self.DEFAULT_STACKS_CFG_PATH))
+        parser.add_argument('-E', '--exclude-release',
+                            nargs='*',
+                            default=[],
+                            help='Exclude all stacks in the given release(s)')
         args = parser.parse_args()
 
         return args
 
-    def load_stacks(self, default_config_path, stackcfg_dir):
+    def load_stacks(self, default_config_path, stackcfg_dir, excludes=[]):
         default_config = load_default_cfg(default_config_path)
         stacks = []
         stacks_config = {}
         for root, dirnames, filenames in os.walk(stackcfg_dir):
             for filename in fnmatch.filter(filenames, '*.cfg'):
-                stacks.append(os.path.join(root, filename))
+                skip = False
+                for exclude in excludes:
+                    if root.endswith(exclude):
+                        skip = True
+                if not skip:
+                    stacks.append(os.path.join(root, filename))
 
         for stack in stacks:
             stackcfg = deepcopy(default_config)
@@ -112,7 +121,8 @@ class StacksValidator(object):
         args = self.parse_arguments()
 
         set_logging(args.debug)
-        stacks = self.load_stacks(default_config_path, args.stackcfg_dir)
+        stacks = self.load_stacks(default_config_path, args.stackcfg_dir,
+                                  args.exclude_release)
         if not stacks:
             logging.debug("No stack configuration found. Try to specify " +
                           "the stack directory with -D.")
