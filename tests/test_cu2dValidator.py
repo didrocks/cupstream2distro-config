@@ -86,7 +86,7 @@ class TestCheckDuplicateTargets(TestWithScenarios, TestCase):
 
     def test_call(self):
         validator = StacksValidator()
-        validator.load_stacks = lambda x, y: self.stacks
+        validator.load_stacks = lambda x, y, z: self.stacks
         validator.parse_arguments = lambda: MagicMock()
         self.assertEqual(1 if self.expected else 0, validator(''))
 
@@ -111,7 +111,7 @@ class TestLoadStacks(TestCase):
     def test_call_with_no_stacks(self):
         """call to the command must return 1 in case no stacks were loaded"""
         validator = StacksValidator()
-        validator.load_stacks = lambda x, y: {}
+        validator.load_stacks = lambda x, y, z: {}
         validator.parse_arguments = lambda: MagicMock()
         self.assertEqual(1, validator(''))
 
