@@ -18,8 +18,8 @@
           <defaultValue>false</defaultValue>
         </hudson.model.BooleanParameterDefinition>
         <hudson.model.StringParameterDefinition>
-          <name>REBUILD_ONLY</name>
-          <description>space separated list of project to rebuild</description>
+          <name>ON_PACKAGES</name>
+          <description>space separated list of project that will effect a rebuild or a publication</description>
           <defaultValue></defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.BooleanParameterDefinition>
@@ -34,7 +34,7 @@
         </hudson.model.BooleanParameterDefinition>
         <hudson.model.BooleanParameterDefinition>
           <name>FORCE_REBUILD</name>
-          <description>Force rebuilding above selected components (matching eventually REBUILD_ONLY), even if they have nothing to release. Note that if destination has a version that is not in the Vcs and that SKIP_DEST_CHECK is not enabled, this will still warn and block the rebuild.</description>
+          <description>Force rebuilding above selected components (matching eventually ON_PACKAGES), even if they have nothing to release. Note that if destination has a version that is not in the Vcs and that SKIP_DEST_CHECK is not enabled, this will still warn and block the rebuild.</description>
           <defaultValue>false</defaultValue>
         </hudson.model.BooleanParameterDefinition>
         <hudson.model.BooleanParameterDefinition>
@@ -74,7 +74,7 @@ umask 0002
 mkdir -p $WRKDIR
 cd $WRKDIR
 
-REBUILD_ONLY=${REBUILD_ONLY-}
+ON_PACKAGES=${ON_PACKAGES-}
 
 # detect if we do a new build (or a new check treated as a build)
 if [ "$FORCE_PUBLICATION" != "true" -a "$AUTO_PUBLICATION" != "true" ]; then
@@ -94,10 +94,10 @@ else
 
   # enable to only trying automatically republish if the previous run didn't fail
   # but not if a manual "normal" publication is tried: AUTO_PUBLICATION and foo
-  elif [ "$AUTO_PUBLICATION" = "true" -a "$REBUILD_ONLY" != "foo" ]; then
+  elif [ "$AUTO_PUBLICATION" = "true" -a "$ON_PACKAGES" != "foo" ]; then
     if [ `cat stack.status` -eq 1 ]; then
       echo "ERROR: The previous run already failed, can't republish automatically the stack. Report to that run to get more info."
-      echo "If you wanted to try/force a manual regular publication, you can use AUTO_PUBLICATION and set REBUILD_ONLY to foo to bypass this safeguard."
+      echo "If you wanted to try/force a manual regular publication, you can use AUTO_PUBLICATION and set ON_PACKAGES to foo to bypass this safeguard."
       exit 1
     fi
   fi

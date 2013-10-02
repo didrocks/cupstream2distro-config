@@ -27,7 +27,7 @@ WRKDIR={{ BASEDIR }}/work/{{ release }}/{{ stack }}
 OPTS="{{ opts }}"
 
 # jenkins doesn't pass empty variable to subjobs, set it if nothing present
-REBUILD_ONLY=${REBUILD_ONLY-}
+ON_PACKAGES=${ON_PACKAGES-}
 
 # don't rebuild the stack
 if [ "$CHECK_WITH_WHOLE_PPA" = "true" ] || [ "$FORCE_PUBLICATION" = "true" ] || [ "$AUTO_PUBLICATION" = "true" ]; then
@@ -35,9 +35,9 @@ if [ "$CHECK_WITH_WHOLE_PPA" = "true" ] || [ "$FORCE_PUBLICATION" = "true" ] || 
     exit 0
 fi
 
-if [ -n "$REBUILD_ONLY" ]; then
+if [ -n "$ON_PACKAGES" ]; then
     DO_REBUILD=0
-    for prj in $REBUILD_ONLY; do
+    for prj in $ON_PACKAGES; do
         [ "$prj" = "{{ projectname }}" ] &amp;&amp; DO_REBUILD=1
     done
     if [ $DO_REBUILD -eq 0 ]; then

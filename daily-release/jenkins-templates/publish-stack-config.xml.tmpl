@@ -28,10 +28,12 @@ pwd|grep -q workspace &amp;&amp; rm -f *
 export LANG=en_US.UTF-8
 WRKDIR={{ BASEDIR }}/work/{{ release }}/{{ stack }}
 OUTDIR={{ BASEDIR }}/out/
+ON_PACKAGES=${ON_PACKAGES-}
 
 OPTS="{{ opts }}"
 FORCE_PUBLICATION=${FORCE_PUBLICATION-false}
 [ "$FORCE_PUBLICATION" = "true" ] &amp;&amp; OPTS="$OPTS -f"
+[ -n "$ON_PACKAGES" ] &amp;&amp; [ "$ON_PACKAGES" != 'foo' ] &amp;&amp; OPTS="$OPTS --filter $ON_PACKAGES"
 
 cd $WRKDIR
 {{ BINDIR }}/publisher $OPTS
