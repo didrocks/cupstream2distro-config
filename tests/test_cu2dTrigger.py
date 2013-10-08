@@ -382,14 +382,18 @@ class TestCall(TestCase):
             jt.trigger_stack.assert_called_once()
 
     @patch('c2dconfigutils.cu2dTrigger.load_default_cfg')
-    def test_trigger_ci_and_autolanding(self, load_default_cfg):
+    def test_trigger_ci_and_autolanding_stack(self, load_default_cfg):
+        load_default_cfg.return_value = {}
         sys_argv = ['./command', '--trigger-ci', '--trigger-autolanding',
                     '../stacks/head/stack.cfg']
         with patch('sys.argv', sys_argv):
             jt = JobTrigger()
             jt.trigger_stack = MagicMock()
             jt('')
-            jt.trigger_stack.assert_called_once()
+            jt.trigger_stack.assert_called_once_with(
+                {}, '../stacks/head/stack.cfg',
+                JobTrigger.DEFAULT_PLUGIN_PATH,
+                ['autolanding', 'ci'])
 
     @patch('c2dconfigutils.cu2dTrigger.load_default_cfg')
     def test_missing_type(self, load_default_cfg):
@@ -432,6 +436,22 @@ class TestCall(TestCase):
             jt('')
             jt.trigger_project.assert_called_once_with(plugin_path, {}, branch,
                                                        cfg_dir, ['ci'])
+
+    @patch('c2dconfigutils.cu2dTrigger.load_default_cfg')
+    def test_trigger_ci_and_autolanding_branch(self, load_default_cfg):
+        load_default_cfg.return_value = {}
+        branch = 'lp:branch'
+        plugin_path = '/plugin/path'
+        cfg_dir = '../stacks'
+        sys_argv = ['./command', '--trigger-ci', '--trigger-autolanding',
+                    '--branch', branch, '-p', plugin_path, '-D', cfg_dir]
+        with patch('sys.argv', sys_argv):
+            jt = JobTrigger()
+            jt.trigger_project = MagicMock()
+            jt('')
+            jt.trigger_project.assert_called_once_with(plugin_path, {}, branch,
+                                                       cfg_dir,
+                                                       ['autolanding', 'ci'])
 
     @patch('c2dconfigutils.cu2dTrigger.load_default_cfg')
     def test_trigger_ci_missing_branch(self, load_default_cfg):

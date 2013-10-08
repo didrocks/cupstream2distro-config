@@ -217,7 +217,7 @@ class JobTrigger(object):
         trigger_types = []
         if args.trigger_autolanding:
             trigger_types.append('autolanding')
-        else:
+        if args.trigger_ci:
             trigger_types.append('ci')
         if args.stackcfg:
             return self.trigger_stack(default_config,
