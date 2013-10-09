@@ -59,21 +59,25 @@ class JobTrigger(object):
                             'Useful when using -c or -l ' +
                             '(default: {}).'.format(
                                 self.DEFAULT_STACKS_CFG_PATH))
-        parser.add_argument('-c', '--trigger-ci',
+        parser.add_argument('-b', '--branch',
                             default=None,
-                            help='trigger ci job on the defined target branch')
-        parser.add_argument('-l', '--trigger-autolanding',
-                            default=None,
-                            help='Trigger autolanding on the defined' +
-                            ' target branch')
+                            help='target source branch to search')
+        parser.add_argument('-c', '--trigger-ci', action='store_true',
+                            default=False,
+                            help='trigger ci jobs')
+        parser.add_argument('-l', '--trigger-autolanding', action='store_true',
+                            default=False,
+                            help='Trigger autolanding jobs')
         parser.add_argument('stackcfg', nargs='?',
                             help='Path to a configuration file for the stack',
                             default=None)
         args = parser.parse_args()
 
-        if not args.stackcfg and \
-                not args.trigger_ci and not args.trigger_autolanding:
-            parser.error('One of -c, -l or stackcfg must be defined')
+        if not args.stackcfg and not args.branch:
+            parser.error('Either -b/--branch or stackcfg must be defined')
+        if not args.trigger_ci and not args.trigger_autolanding:
+            parser.error('Must specify -c/--trigger-ci or '
+                         '-l/--trigger-autolanding or both')
         return args
 
     def generate_trigger(self, project_name, project_config, job_type):
@@ -98,7 +102,7 @@ class JobTrigger(object):
                 'branch': branch,
                 'options': options}
 
-    def process_stack(self, stack):
+    def process_stack(self, stack, trigger_types):
         """ Generate a list of job triggers from the projects within a stack
 
         :param stack: dictionary with configuration of the stack
@@ -113,7 +117,7 @@ class JobTrigger(object):
                 project_config = copy.deepcopy(stack['ci_default'])
                 dict_union(project_config, stack[section_name][project_name])
 
-                for job_type in ['ci', 'autolanding']:
+                for job_type in trigger_types:
                     if project_config.get(job_type + '_template', None):
                         trigger_list.append(self.generate_trigger(
                             project_name, project_config, job_type))
@@ -150,7 +154,8 @@ class JobTrigger(object):
         else:
             return result
 
-    def trigger_stack(self, default_config, stackcfg, plugin_path):
+    def trigger_stack(self, default_config, stackcfg, plugin_path,
+                      trigger_types):
         lock_name = self._get_lock_name(stackcfg)
         stackcfg = load_stack_cfg(stackcfg, default_config)
         if not stackcfg:
@@ -158,7 +163,7 @@ class JobTrigger(object):
             return 1
         trigger_list = []
         if stackcfg['projects']:
-            trigger_list = self.process_stack(stackcfg)
+            trigger_list = self.process_stack(stackcfg, trigger_types)
 
         for trigger in trigger_list:
             self.trigger_job(plugin_path, trigger, lock_name)
@@ -192,10 +197,12 @@ class JobTrigger(object):
         return None
 
     def trigger_project(self, plugin_path, default_config, trigger_branch,
-                        stackcfg_dir, trigger_type):
+                        stackcfg_dir, trigger_types):
 
-        trigger = self.get_trigger_for_target(default_config, trigger_branch,
-                                              stackcfg_dir, trigger_type)
+        for job_type in trigger_types:
+            trigger = self.get_trigger_for_target(default_config,
+                                                  trigger_branch,
+                                                  stackcfg_dir, job_type)
         if not trigger:
             return 1
         self.trigger_job(plugin_path, trigger, lock_name='target-branch')
@@ -207,16 +214,19 @@ class JobTrigger(object):
 
         set_logging(args.debug)
         default_config = load_default_cfg(default_config_path)
+        trigger_types = []
+        if args.trigger_autolanding:
+            trigger_types.append('autolanding')
+        if args.trigger_ci:
+            trigger_types.append('ci')
         if args.stackcfg:
             return self.trigger_stack(default_config,
                                       args.stackcfg,
-                                      args.plugin_path)
-        if args.trigger_autolanding:
-            trigger_type = 'autolanding'
-            trigger_branch = args.trigger_autolanding
-        else:
-            trigger_type = 'ci'
-            trigger_branch = args.trigger_ci
-        return self.trigger_project(args.plugin_path, default_config,
-                                    trigger_branch, args.stackcfg_dir,
-                                    trigger_type)
+                                      args.plugin_path,
+                                      trigger_types)
+        if args.branch and args.stackcfg_dir:
+            return self.trigger_project(args.plugin_path, default_config,
+                                        args.branch, args.stackcfg_dir,
+                                        trigger_types)
+        logging.error('Invalid arguments')
+        return -1

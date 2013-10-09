@@ -107,9 +107,10 @@ class TestProcessStack(TestWithScenarios, TestCase):
 
     def setUp(self):
         self.jt = JobTrigger()
+        self.trigger_types = ['ci', 'autolanding']
 
     def test_process_stack(self):
-        ret = self.jt.process_stack(self.stack)
+        ret = self.jt.process_stack(self.stack, self.trigger_types)
         self.assertEqual(self.expected_result, ret)
 
 
@@ -189,6 +190,7 @@ class TestTriggerStack(TestCase):
         self.plugin_path = '/tmp'
         self.stack_cfg = {'projects': {'foo': {},
                                        'bar': {}}}
+        self.trigger_types = ['ci', 'autolanding']
         self.jt = JobTrigger()
         self.jt.process_stack = MagicMock(return_value=['trigger'])
         self.jt.trigger_job = MagicMock()
@@ -198,9 +200,10 @@ class TestTriggerStack(TestCase):
         """Verifiy jobs are triggered for a valid stack"""
         load_stack_cfg.return_value = self.stack_cfg
         ret = self.jt.trigger_stack(self.default_config, self.stack_cfg_name,
-                                    self.plugin_path)
+                                    self.plugin_path, self.trigger_types)
         load_stack_cfg.assert_called_with('stacks/head/foobar.cfg', {})
-        self.jt.process_stack.assert_called_with(self.stack_cfg)
+        self.jt.process_stack.assert_called_with(self.stack_cfg,
+                                                 self.trigger_types)
         self.jt.trigger_job.assert_called_with(self.plugin_path, 'trigger',
                                                'head-foobar.cfg')
         self.assertEqual(ret, 0)
@@ -210,7 +213,7 @@ class TestTriggerStack(TestCase):
         """Verify no jobs are triggered when stack file fails to load"""
         load_stack_cfg.return_value = False
         ret = self.jt.trigger_stack(self.default_config, self.stack_cfg_name,
-                                    self.plugin_path)
+                                    self.plugin_path, self.trigger_types)
         load_stack_cfg.assert_called_with('stacks/head/foobar.cfg', {})
         self.assertFalse(self.jt.process_stack.called)
         self.assertFalse(self.jt.trigger_job.called)
@@ -221,7 +224,7 @@ class TestTriggerStack(TestCase):
         """Verify no jobs are triggered when no project section"""
         load_stack_cfg.return_value = {}
         ret = self.jt.trigger_stack(self.default_config, self.stack_cfg_name,
-                                    self.plugin_path)
+                                    self.plugin_path, self.trigger_types)
         load_stack_cfg.assert_called_with('stacks/head/foobar.cfg', {})
         self.assertFalse(self.jt.process_stack.called)
         self.assertFalse(self.jt.trigger_job.called)
@@ -234,7 +237,7 @@ class TestTriggerStack(TestCase):
                                        'to_transition': {'foo': {},
                                                          'bar': {}}}
         ret = self.jt.trigger_stack(self.default_config, self.stack_cfg_name,
-                                    self.plugin_path)
+                                    self.plugin_path, self.trigger_types)
         load_stack_cfg.assert_called_with('stacks/head/foobar.cfg', {})
         self.assertFalse(self.jt.process_stack.called)
         self.assertFalse(self.jt.trigger_job.called)
@@ -246,9 +249,10 @@ class TestTriggerStack(TestCase):
         load_stack_cfg.return_value = self.stack_cfg
         self.jt.process_stack = MagicMock(return_value=[])
         ret = self.jt.trigger_stack(self.default_config, self.stack_cfg_name,
-                                    self.plugin_path)
+                                    self.plugin_path, self.trigger_types)
         load_stack_cfg.assert_called_with('stacks/head/foobar.cfg', {})
-        self.jt.process_stack.assert_called_with(self.stack_cfg)
+        self.jt.process_stack.assert_called_with(self.stack_cfg,
+                                                 self.trigger_types)
         self.assertFalse(self.jt.trigger_job.called)
         self.assertEqual(ret, 0)
 
@@ -256,15 +260,18 @@ class TestTriggerStack(TestCase):
 class TestTriggerBranch(TestWithScenarios, TestCase):
     scenarios = [
         ('ci',
-         {'trigger_type': 'ci',
+         {'trigger_type': ['ci'],
+          'job_type': 'ci',
           'fasttrack': True,
           'options': ['--trigger-ci']}),
         ('autolanding-fasttrack',
-         {'trigger_type': 'autolanding',
+         {'trigger_type': ['autolanding'],
+          'job_type': 'autolanding',
           'fasttrack': True,
           'options': ['--autoland', '--fasttrack']}),
         ('autolanding-nofasttrack',
-         {'trigger_type': 'autolanding',
+         {'trigger_type': ['autolanding'],
+          'job_type': 'autolanding',
           'fasttrack': False,
           'options': ['--autoland']}),
     ]
@@ -284,7 +291,7 @@ class TestTriggerBranch(TestWithScenarios, TestCase):
                                  self.trigger_type)
         jt.get_trigger_for_target.assert_called_once_with(
             self.default_config, self.target_branch,
-            self.stackcfg_dir, self.trigger_type)
+            self.stackcfg_dir, self.job_type)
         jt.trigger_job.assert_called_once_with(self.plugin_path, trigger,
                                                lock_name='target-branch')
         self.assertEqual(ret, 0)
@@ -322,9 +329,9 @@ class TestTriggerBranch(TestWithScenarios, TestCase):
         trigger = jt.get_trigger_for_target(self.default_config,
                                             self.target_branch,
                                             self.stackcfg_dir,
-                                            self.trigger_type)
+                                            self.job_type)
         expected_trigger = {
-            'name': 'branch-{}'.format(self.trigger_type),
+            'name': 'branch-{}'.format(self.job_type),
             'branch': self.target_branch,
             'options': self.options
         }
@@ -367,12 +374,38 @@ class TestCall(TestCase):
 
     @patch('c2dconfigutils.cu2dTrigger.load_default_cfg')
     def test_stackcfg_defined(self, load_default_cfg):
-        sys_argv = ['./command', '../stacks/head/stack.cfg']
+        sys_argv = ['./command', '--trigger-ci', '../stacks/head/stack.cfg']
         with patch('sys.argv', sys_argv):
             jt = JobTrigger()
             jt.trigger_stack = MagicMock()
             jt('')
             jt.trigger_stack.assert_called_once()
+
+    @patch('c2dconfigutils.cu2dTrigger.load_default_cfg')
+    def test_trigger_ci_and_autolanding_stack(self, load_default_cfg):
+        load_default_cfg.return_value = {}
+        sys_argv = ['./command', '--trigger-ci', '--trigger-autolanding',
+                    '../stacks/head/stack.cfg']
+        with patch('sys.argv', sys_argv):
+            jt = JobTrigger()
+            jt.trigger_stack = MagicMock()
+            jt('')
+            jt.trigger_stack.assert_called_once_with(
+                {}, '../stacks/head/stack.cfg',
+                JobTrigger.DEFAULT_PLUGIN_PATH,
+                ['autolanding', 'ci'])
+
+    @patch('c2dconfigutils.cu2dTrigger.load_default_cfg')
+    def test_missing_type(self, load_default_cfg):
+        sys_argv = ['./command', '../stacks/head/stack.cfg']
+        with patch('sys.argv', sys_argv):
+            jt = JobTrigger()
+            jt.trigger_stack = MagicMock()
+            try:
+                jt('')
+            except SystemExit:
+                exception = True
+            self.assertTrue(exception)
 
     @patch('c2dconfigutils.cu2dTrigger.load_default_cfg')
     def test_trigger_autolanding(self, load_default_cfg):
@@ -381,13 +414,13 @@ class TestCall(TestCase):
         plugin_path = '/plugin/path'
         cfg_dir = '../stacks'
         sys_argv = ['./command', '--trigger-autolanding',
-                    branch, '-p', plugin_path, '-D', cfg_dir]
+                    '--branch', branch, '-p', plugin_path, '-D', cfg_dir]
         with patch('sys.argv', sys_argv):
             jt = JobTrigger()
             jt.trigger_project = MagicMock()
             jt('')
             jt.trigger_project.assert_called_once_with(plugin_path, {}, branch,
-                                                       cfg_dir, 'autolanding')
+                                                       cfg_dir, ['autolanding'])
 
     @patch('c2dconfigutils.cu2dTrigger.load_default_cfg')
     def test_trigger_ci(self, load_default_cfg):
@@ -396,10 +429,43 @@ class TestCall(TestCase):
         plugin_path = '/plugin/path'
         cfg_dir = '../stacks'
         sys_argv = ['./command', '--trigger-ci',
-                    branch, '-p', plugin_path, '-D', cfg_dir]
+                    '--branch', branch, '-p', plugin_path, '-D', cfg_dir]
         with patch('sys.argv', sys_argv):
             jt = JobTrigger()
             jt.trigger_project = MagicMock()
             jt('')
             jt.trigger_project.assert_called_once_with(plugin_path, {}, branch,
-                                                       cfg_dir, 'ci')
+                                                       cfg_dir, ['ci'])
+
+    @patch('c2dconfigutils.cu2dTrigger.load_default_cfg')
+    def test_trigger_ci_and_autolanding_branch(self, load_default_cfg):
+        load_default_cfg.return_value = {}
+        branch = 'lp:branch'
+        plugin_path = '/plugin/path'
+        cfg_dir = '../stacks'
+        sys_argv = ['./command', '--trigger-ci', '--trigger-autolanding',
+                    '--branch', branch, '-p', plugin_path, '-D', cfg_dir]
+        with patch('sys.argv', sys_argv):
+            jt = JobTrigger()
+            jt.trigger_project = MagicMock()
+            jt('')
+            jt.trigger_project.assert_called_once_with(plugin_path, {}, branch,
+                                                       cfg_dir,
+                                                       ['autolanding', 'ci'])
+
+    @patch('c2dconfigutils.cu2dTrigger.load_default_cfg')
+    def test_trigger_ci_missing_branch(self, load_default_cfg):
+        load_default_cfg.return_value = {}
+        branch = 'lp:branch'
+        plugin_path = '/plugin/path'
+        cfg_dir = '../stacks'
+        sys_argv = ['./command', '--trigger-ci',
+                    '-p', plugin_path, '-D', cfg_dir]
+        with patch('sys.argv', sys_argv):
+            jt = JobTrigger()
+            jt.trigger_project = MagicMock()
+            try:
+                jt('')
+            except SystemExit:
+                exception = True
+            self.assertTrue(exception)
