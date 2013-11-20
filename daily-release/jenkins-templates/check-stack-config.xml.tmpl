@@ -97,7 +97,7 @@ JOBROOT={{ extracheck }}
 
 for machine in {{ apmachines }}; do
     echo &quot;Calculating results for machine $machine&quot;
-    JUNIT=$({{ BINDIR }}/latest_autopilot_results $JOBROOT $machine)
+    JUNIT=$({{ BINDIR }}/latest_autopilot_results $JENKINS_HOME $JOBROOT $machine)
     RET=$?
 
     if [ $RET -gt 0 ]; then
