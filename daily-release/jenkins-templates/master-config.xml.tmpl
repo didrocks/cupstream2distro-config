@@ -250,7 +250,7 @@ export WORKSPACE="$PWD"
 WRKDIR={{ BASEDIR }}/work/{{ release }}/{{ stack }}
 cd $WRKDIR
 
-{{ BINDIR }}/stack_status -s {{ stack }} -r {{ release }}
+{{ BINDIR }}/stack_status -j "$JENKINS_HOME" -s {{ stack }} -r {{ release }}
 
 # remove lock files if we are in a build case (as it's when we built them)
 if [ "$FORCE_PUBLICATION" != "true" -a "$AUTO_PUBLICATION" != "true" ]; then
