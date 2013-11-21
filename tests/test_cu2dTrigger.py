@@ -157,7 +157,7 @@ class TestTriggerJob(TestWithScenarios, TestCase):
         trigger = {'name': 'foo-ci',
                    'branch': 'lp:foo',
                    'options': ['--trigger-ci']}
-        plugin_path = '/var/lib/jenkins/plugin'
+        plugin_path = '/iSCSI/jenkins/plugin'
         plugin = os.path.join(plugin_path, 'launchpadTrigger.py')
         calls = [
             call([plugin, '--lock-name=lock', '--branch=lp:foo',
@@ -176,7 +176,7 @@ class TestTriggerJob(TestWithScenarios, TestCase):
         trigger = {'name': 'foo-ci',
                    'branch': 'lp:foo',
                    'options': ['--trigger-ci']}
-        plugin_path = '/var/lib/jenkins/plugin'
+        plugin_path = '/iSCSI/jenkins/plugin'
         with patch('subprocess.check_call', check_call):
             with patch("logging.error", logging_error):
                 self.jt.trigger_job(plugin_path, trigger, 'lock')

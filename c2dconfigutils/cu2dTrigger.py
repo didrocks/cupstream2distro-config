@@ -35,7 +35,7 @@ from c2dconfigutils import (
 
 
 class JobTrigger(object):
-    DEFAULT_PLUGIN_PATH = '/var/lib/jenkins/jenkins-launchpad-plugin/'
+    DEFAULT_PLUGIN_PATH = '/iSCSI/jenkins/jenkins-launchpad-plugin/'
     DEFAULT_STACKS_CFG_PATH = '../stacks/'
 
     def parse_arguments(self):
